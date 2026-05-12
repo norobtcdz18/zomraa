@@ -35,11 +35,11 @@
     html.dark body { background: linear-gradient(145deg, #0f172a 0%, #020617 100%); background-attachment: fixed; color: #f8fafc; }
     html.dark .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }
     html.dark .custom-input { background-color: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); color: #f8fafc; }
-    html.dark .custom-input::placeholder { color: #94a3b8; }
+    html.dark .custom-input::placeholder { color: #64748b; }
     html.dark .custom-select option { background-color: #1e293b; color: #f8fafc; }
     
     .no-scrollbar::-webkit-scrollbar { display: none; }
-    .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+    .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
@@ -63,10 +63,16 @@
     const firebaseConfig = { apiKey: "AIzaSyANXo96l5_hP1iTH_K8TaYixdGHJwr6x-0", authDomain: "blod-6a25b.firebaseapp.com", projectId: "blod-6a25b", storageBucket: "blod-6a25b.firebasestorage.app", messagingSenderId: "766563585970", appId: "1:766563585970:web:ad99353f2dbcbf759a1eab" };
     let app; try { app = initializeApp(firebaseConfig); } catch(e) {}
     const auth = getAuth(app); const db = getFirestore(app);
-    const DONORS_COLLECTION = "donors"; const MEDICINES_COLLECTION = "medicines"; const PHARMACIES_COLLECTION = "pharmacies"; const REPORTS_COLLECTION = "reports"; const NOTIFICATIONS_COLLECTION = "notifications";
+    
+    const DONORS_COLLECTION = "donors"; 
+    const MEDICINES_COLLECTION = "medicines"; 
+    const PHARMACIES_COLLECTION = "pharmacies"; 
+    const REPORTS_COLLECTION = "reports"; 
+    const NOTIFICATIONS_COLLECTION = "notifications";
+    const MAIL_COLLECTION = "mail"; // لإرسال الإيميلات
     const COOLDOWN_DAYS = 90;
 
-    // --- 1. Reusable Core Components (التهذيب والضغط) ---
+    // --- 1. Reusable Core Components ---
 
     function BaseModal({ isOpen, onClose, children, hideClose = false }) {
         if (!isOpen) return null;
@@ -83,7 +89,9 @@
     function EmptyState({ icon: Icon, title, desc }) {
         return (
             <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800 animate-fadeIn">
-                <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center opacity-70"><Icon size={40} className="text-slate-300 dark:text-slate-600"/></div>
+                <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center opacity-70">
+                    <Icon size={40} className="text-slate-300 dark:text-slate-600"/>
+                </div>
                 <p className="text-slate-600 dark:text-slate-300 font-bold">{title}</p>
                 <p className="text-slate-400 dark:text-slate-500 text-sm mt-2 px-4 leading-relaxed">{desc}</p>
             </div>
@@ -106,7 +114,9 @@
     function CustomModal({ isOpen, title, message, onConfirm, onCancel, isDestructive, confirmText }) {
       return (
         <BaseModal isOpen={isOpen} hideClose={true}>
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto ${isDestructive ? 'bg-red-100 dark:bg-red-500/20 text-red-500 dark:text-red-400' : 'bg-emerald-100 dark:bg-brand-accent/20 text-emerald-600 dark:text-brand-accent'}`}>{isDestructive ? <AlertTriangle size={24}/> : <Info size={24}/>}</div>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto ${isDestructive ? 'bg-red-100 dark:bg-red-500/20 text-red-500 dark:text-red-400' : 'bg-emerald-100 dark:bg-brand-accent/20 text-emerald-600 dark:text-brand-accent'}`}>
+                {isDestructive ? <AlertTriangle size={24}/> : <Info size={24}/>}
+            </div>
             <h3 className="text-xl font-black text-slate-800 dark:text-white text-center mb-2">{title}</h3>
             <p className="text-slate-500 dark:text-slate-400 text-center mb-6 text-sm leading-relaxed whitespace-pre-line">{message}</p>
             <div className="flex gap-3">
@@ -119,11 +129,13 @@
 
     function ForgotPasswordModal({ isOpen, onClose, showNotification }) {
       const [email, setEmail] = useState(''); const [loading, setLoading] = useState(false);
+      
       const handleReset = async (e) => {
         e.preventDefault(); if(!email) return; setLoading(true);
         try { await sendPasswordResetEmail(auth, email); showNotification('success', 'تم إرسال الرابط.'); onClose(); } 
         catch (err) { showNotification('error', 'البريد غير صحيح.'); } finally { setLoading(false); }
       };
+
       return (
         <BaseModal isOpen={isOpen} onClose={onClose}>
             <div className="w-16 h-16 bg-emerald-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner"><Lock size={30} className="text-emerald-500 dark:text-brand-accent"/></div>
@@ -153,7 +165,9 @@
 
     function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
       const [reason, setReason] = useState(''); const [loading, setLoading] = useState(false);
+      
       const handleSubmit = async () => { if(!reason) return; setLoading(true); await onConfirm(reason); setLoading(false); };
+      
       return (
         <BaseModal isOpen={isOpen} onClose={onClose}>
             <div className="w-12 h-12 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><Flag size={24} className="text-red-500 dark:text-red-400"/></div>
@@ -185,7 +199,7 @@
 
       return (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm animate-fadeIn p-0 sm:p-4">
-          <div className="glass-panel w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl relative border-t sm:border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto no-scrollbar animate-[translateY_0.3s_ease-out]">
+          <div className="glass-panel w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl relative border-t sm:border border-slate-300 dark:border-slate-700 max-h-[90vh] overflow-y-auto no-scrollbar animate-[translateY_0.3s_ease-out]">
             <button onClick={onClose} className="absolute top-6 left-6 p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-800 dark:hover:text-white transition"><X size={20}/></button>
             <h3 className="text-xl font-black text-slate-800 dark:text-white text-right mb-6 mt-2 flex items-center justify-end gap-2">
                 {unreadCount > 0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{unreadCount}</span>}
@@ -202,7 +216,7 @@
                        const isRequest = notif.type === 'request';
 
                        return (
-                           <div key={notif.id} className={`p-4 rounded-2xl border transition-colors text-right relative ${notif.read ? 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 opacity-70' : 'bg-white dark:bg-slate-800 border-emerald-200 dark:border-brand-accent/30 shadow-sm'}`} onClick={() => !notif.read && markAsRead(notif.id)}>
+                           <div key={notif.id} className={`p-4 rounded-2xl border transition-colors text-right relative ${notif.read ? 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-70' : 'bg-white dark:bg-slate-800 border-emerald-200 dark:border-brand-accent/30 shadow-sm'}`} onClick={() => !notif.read && markAsRead(notif.id)}>
                                {!notif.read && <div className="absolute top-4 left-4 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></div>}
                                
                                <h4 className="font-bold text-slate-800 dark:text-white text-sm mb-1">{notif.title}</h4>
@@ -244,7 +258,7 @@
 
       return (
         <>
-          <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800 px-4 py-4 flex justify-between items-center mb-6 shadow-sm relative">
+          <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b border-slate-300 dark:border-slate-700 px-4 py-4 flex justify-between items-center mb-6 shadow-sm relative">
              <div className="flex items-center gap-2 shrink-0">
                  <button onClick={() => setView('home')} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 hover:text-emerald-600 dark:hover:text-brand-accent transition"><Home size={20}/></button>
                  <button onClick={toggleTheme} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 transition"><span className="dark:hidden"><Moon size={20}/></span><span className="hidden dark:block"><Sun size={20}/></span></button>
@@ -276,12 +290,12 @@
       );
 
       return (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-50 pb-[env(safe-area-inset-bottom)]">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-300 dark:border-slate-700 z-50 pb-[env(safe-area-inset-bottom)]">
           <div className="flex justify-around items-center h-16 relative px-2">
             <NavBtn id="doctors" icon={HeartPulse} text="أطباء" />
             <NavBtn id="pharmacy" icon={Stethoscope} text="صيدليات" />
             
-            <div className="w-[18%]"></div> {/* مساحة الزر العائم في المنتصف */}
+            <div className="w-[18%]"></div> {/* Spacer for middle button */}
             
             <NavBtn id="medicines" icon={Pill} text="أدوية" />
             <button onClick={() => user ? setView('profile') : setView('login')} className={`flex flex-col items-center justify-center gap-1 w-[18%] h-full transition-colors ${['profile','login','register'].includes(view) ? 'text-emerald-500 dark:text-brand-accent' : 'text-slate-400 hover:text-slate-600'}`}>
@@ -289,8 +303,8 @@
                 <span className="text-[10px] font-bold">{user?'حسابي':'دخول'}</span>
             </button>
             
-            {/* الزر العائم في المنتصف: رمز القلب، يأخذ للرئيسية - مع حواف ملونة لتكون واضحة */}
-            <button onClick={() => setView('home')} className={`absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full shadow-[0_8px_20px_rgba(16,185,129,0.3)] flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-emerald-100 dark:border-slate-700 ${view === 'home' ? 'bg-emerald-500 dark:bg-brand-accent text-white dark:text-slate-900' : 'bg-brand-accent text-slate-900'}`}>
+            {/* الزر العائم في المنتصف - يذهب للرئيسية دائماً. لون الحواف مطابق للأشرطة العلوية والسفلية */}
+            <button onClick={() => setView('home')} className={`absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full shadow-[0_8px_20px_rgba(205,235,87,0.3)] flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-slate-300 dark:border-slate-700 ${view === 'home' ? 'bg-emerald-500 dark:bg-brand-accent text-white dark:text-slate-900' : 'bg-brand-accent text-slate-900'}`}>
                 <Heart size={26} fill={view === 'home' ? "currentColor" : "none"} strokeWidth={view === 'home' ? 0 : 2.5} />
             </button>
           </div>
@@ -426,8 +440,18 @@
       const isCompleted = medicine.status === 'completed';
       const dateStr = medicine.createdAt?.toDate ? new Intl.DateTimeFormat('ar-DZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(medicine.createdAt.toDate()) : 'الآن';
 
+      // تجهيز معلومات الطرف الآخر للاتصال
+      let targetPhone = ''; let targetName = ''; let targetRole = '';
+      if (isInProgress && isMine) {
+          targetPhone = medicine.fulfillerPhone ? (String(medicine.fulfillerPhone).startsWith('0') ? medicine.fulfillerPhone : `0${medicine.fulfillerPhone}`) : '';
+          targetName = medicine.fulfillerName || 'فاعل خير'; targetRole = 'المتبرع';
+      } else if (isInProgress && (!isMine && user && user.uid === medicine.fulfillerId)) {
+          targetPhone = medicine.requesterPhone ? (String(medicine.requesterPhone).startsWith('0') ? medicine.requesterPhone : `0${medicine.requesterPhone}`) : '';
+          targetName = medicine.requesterName || 'طالب الدواء'; targetRole = 'طالب الدواء';
+      }
+
       return (
-        <div className={`glass-panel rounded-[2rem] p-5 mb-4 relative mx-1 transition-all ${isCompleted ? 'opacity-70 grayscale' : 'hover:border-emerald-200 dark:hover:border-brand-accent/30'} ${isInProgress && isMine ? 'ring-2 ring-indigo-500/50' : ''}`}>
+        <div className={`glass-panel rounded-[2rem] p-5 mb-4 relative mx-1 transition-all ${isCompleted ? 'opacity-70 grayscale' : 'hover:border-emerald-200 dark:hover:border-brand-accent/30'} ${isInProgress && (isMine || (user && user.uid === medicine.fulfillerId)) ? 'ring-2 ring-indigo-500/50' : ''}`}>
           {medicine.isUrgent && !isCompleted && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-1 rounded-full text-[10px] font-black shadow-lg flex items-center gap-1 animate-pulse"><AlertOctagon size={12}/> مستعجل</div>}
           <div className="flex justify-between items-start mb-3 mt-2">
              {isMine ? <button onClick={() => onDelete(medicine.id)} className="p-2 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full hover:bg-red-100 transition shrink-0"><Trash2 size={16}/></button> : <div className="w-8"></div>}
@@ -459,6 +483,16 @@
               {isInProgress && (isMine || (user && user.uid === medicine.fulfillerId)) && (
                   <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-4">
                      <p className="text-center text-xs text-indigo-700 dark:text-indigo-400 font-bold mb-4">تواصل مع الطرف الآخر للاتفاق على التسليم.</p>
+                     
+                     <div className="flex items-center justify-between gap-2 mb-5">
+                         {targetPhone ? (
+                             <a href={`tel:${targetPhone}`} className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md transition active:scale-95">اتصال <Phone size={14}/></a>
+                         ) : (
+                             <div className="flex-1 bg-indigo-300 text-white py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2">رقم غير متاح</div>
+                         )}
+                         <span className="text-indigo-800 dark:text-indigo-200 font-bold bg-white dark:bg-slate-900/50 border border-indigo-100 dark:border-indigo-500/30 px-4 py-3 rounded-xl tracking-wider" dir="ltr">{targetPhone || '---'}</span>
+                     </div>
+
                      <div className="flex gap-2">
                          <button onClick={() => onCancelFulfill(medicine.id)} className="flex-1 py-2 bg-white dark:bg-slate-900 text-red-500 border border-red-200 dark:border-red-500/30 rounded-xl font-bold text-xs">إلغاء ❌</button>
                          <button onClick={() => onComplete(medicine.id)} className="flex-1 py-2 bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-md">تم التسليم ✅</button>
@@ -498,7 +532,24 @@
           if (!user) { showNotification('error', 'سجل الدخول أولاً.'); setView('login'); return; }
           if (user.uid === donor.id) return showNotification('error', 'لا يمكنك إرسال طلب لنفسك.');
           setModalConfig({ isOpen: true, title: "تأكيد الطلب", message: `سيتم إرسال إشعار للمتبرع. هل أنت متأكد؟`, isDestructive: false, confirmText: "إرسال", action: async () => {
-                 try { await addDoc(collection(db, NOTIFICATIONS_COLLECTION), { toUserId: donor.id, fromUserId: user.uid, fromUserPhone: userProfile?.phone || '', title: "طلب تبرع 🩸", body: `المستخدم ${userProfile?.username || 'مريض'} يحتاج تبرعك. هاتفه: ${userProfile?.phone || ''}`, type: 'request', read: false, createdAt: serverTimestamp() }); showNotification('success', 'تم إرسال الإشعار!'); if (onSuccessCallback) onSuccessCallback(); } catch(e) {}
+                 try { 
+                     // إرسال الإشعار
+                     await addDoc(collection(db, NOTIFICATIONS_COLLECTION), { toUserId: donor.id, fromUserId: user.uid, fromUserPhone: userProfile?.phone || '', title: "طلب تبرع 🩸", body: `المستخدم ${userProfile?.username || 'مريض'} يحتاج تبرعك. هاتفه: ${userProfile?.phone || ''}`, type: 'request', read: false, createdAt: serverTimestamp() }); 
+                     
+                     // طلب إرسال بريد إلكتروني تلقائي (يعمل إذا تم تفعيل إضافة Firebase Email Extension)
+                     if (donor.email) {
+                        await addDoc(collection(db, MAIL_COLLECTION), {
+                            to: donor.email,
+                            message: {
+                                subject: "طلب تبرع عاجل بالدم 🩸 - قطرة حياة",
+                                html: `<div dir="rtl"><h2>مرحباً ${donor.username}،</h2><p>هناك حالة مستعجلة تحتاج لتبرعك. يرجى التواصل معه على الرقم: <b>${userProfile?.phone || ''}</b></p></div>`
+                            }
+                        });
+                     }
+
+                     showNotification('success', 'تم إرسال الإشعار!'); 
+                     if (onSuccessCallback) onSuccessCallback(); 
+                 } catch(e) {}
              }
          });
       };
@@ -638,27 +689,35 @@
               <button onClick={() => setView('home')} className="absolute top-6 left-6 text-slate-400 font-bold flex items-center gap-1 text-sm hover:text-emerald-500"><ArrowRight size={16}/> إغلاق</button>
               <h2 className="text-2xl font-black text-emerald-600 mb-6 text-center mt-4">انضم للمتبرعين</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
-                 <input placeholder="الاسم المستعار (سيظهر للجميع)" className="custom-input h-12 rounded-xl px-4 w-full" onChange={e => setFormData({...formData, username: e.target.value})} required/>
-                 <div className="grid grid-cols-2 gap-3"><input value="بلدية الأمير عبد القادر" disabled className="custom-input h-12 rounded-xl px-4 opacity-70 cursor-not-allowed bg-slate-100 dark:bg-slate-900/50 text-xs sm:text-sm font-bold" /><input placeholder="الحي / الدوار" className="custom-input h-12 rounded-xl px-4 w-full" onChange={e => setFormData({...formData, neighborhood: e.target.value})} required/></div>
-                 <input type="email" placeholder="البريد الإلكتروني" className="custom-input h-12 rounded-xl px-4 w-full" onChange={e => setFormData({...formData, email: e.target.value})} required/>
-                 <input type="password" placeholder="كلمة المرور (+6 حروف)" minLength={6} className="custom-input h-12 rounded-xl px-4 w-full" onChange={e => setFormData({...formData, password: e.target.value})} required/>
+                 <input placeholder="الاسم المستعار (سيظهر للجميع)" className="custom-input h-12 rounded-xl px-4 w-full text-right" onChange={e => setFormData({...formData, username: e.target.value})} required/>
+                 <div className="grid grid-cols-2 gap-3"><input value="بلدية الأمير عبد القادر" disabled className="custom-input h-12 rounded-xl px-4 opacity-70 cursor-not-allowed bg-slate-100 dark:bg-slate-900/50 text-xs sm:text-sm font-bold text-right" /><input placeholder="الحي / الدوار" className="custom-input h-12 rounded-xl px-4 w-full text-right" onChange={e => setFormData({...formData, neighborhood: e.target.value})} required/></div>
+                 <input type="email" placeholder="البريد الإلكتروني" className="custom-input h-12 rounded-xl px-4 w-full text-right" onChange={e => setFormData({...formData, email: e.target.value})} required/>
+                 <input type="password" placeholder="كلمة المرور (+6 حروف)" minLength={6} className="custom-input h-12 rounded-xl px-4 w-full text-right" onChange={e => setFormData({...formData, password: e.target.value})} required/>
                  <div className="flex gap-2"><input type="tel" placeholder="رقم الهاتف" className="custom-input h-12 rounded-xl px-4 flex-1 text-right" onChange={e => setFormData({...formData, phone: e.target.value})} dir="ltr" required/><button type="button" onClick={() => setIsPhoneHidden(!isPhoneHidden)} className={`h-12 px-4 rounded-xl flex items-center justify-center border ${isPhoneHidden ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-500/20' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800'}`} title={isPhoneHidden ? 'الرقم مخفي' : 'الرقم ظاهر'}>{isPhoneHidden ? <EyeOffIcon size={20}/> : <Eye size={20}/>}</button></div>
                  <select className="custom-input custom-select h-12 rounded-xl px-4 w-full text-center font-bold text-lg" onChange={e => setFormData({...formData, bloodType: e.target.value})}>{['A+', 'O+', 'B+', 'AB+', 'A-', 'O-', 'B-', 'AB-'].map(t=><option key={t} value={t}>{t}</option>)}</select>
                  <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 mt-4"><input type="checkbox" id="tos" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-emerald-500 rounded cursor-pointer shrink-0" /><label htmlFor="tos" className="text-xs font-bold text-slate-600 dark:text-slate-300">أوافق على <button type="button" onClick={() => setShowTerms(true)} className="text-emerald-600 underline">شروط الاستخدام وإخلاء المسؤولية</button></label></div>
                  <button type="submit" disabled={loading || !acceptTerms} className="w-full h-14 bg-brand-accent text-slate-900 rounded-2xl font-black shadow-lg mt-6 flex justify-center items-center disabled:opacity-50">{loading ? <Loader2 className="animate-spin"/> : 'تسجيل وانضمام'}</button>
               </form>
            </div>
-           <BaseModal isOpen={showTerms} onClose={() => setShowTerms(false)}><h2 className="text-xl font-black text-emerald-600 mb-4">شروط الاستخدام وإخلاء المسؤولية</h2><div className="text-xs text-slate-600 dark:text-slate-300 space-y-3 text-right leading-relaxed pr-2"><h3 className="font-bold text-slate-800 dark:text-white">1. طبيعة الخدمة:</h3><p>هذا التطبيق هو منصة تقنية تهدف للربط الإنساني والتطوعي بين المتبرعين بالدم والمحتاجين إليه. التطبيق ليس جهة طبية ولا يقوم بجمع الدم أو تخزينه، ولا يغني عن الإجراءات الرسمية المتبعة في مراكز حقن الدم والمستشفيات التابعة لوزارة الصحة.</p><h3 className="font-bold text-slate-800 dark:text-white mt-4">2. حماية المعطيات الشخصية:</h3><p>التزاماً بالقانون 18-07 المتعلق بحماية المعطيات الشخصية، نؤكد أن البيانات المدخلة (رقم الهاتف، الفصيلة) تُستخدم حصراً لغرض التنسيق للتبرع.</p><p>للمستخدم الحق الكامل في استخدام اسم مستعار، كما يملك الحق في إخفاء رقم هاتفه أو حذف حسابه نهائياً في أي وقت، وهو ما سيؤدي لمسح بياناته من قاعدة بياناتنا فوراً.</p><h3 className="font-bold text-slate-800 dark:text-white mt-4">3. إخلاء المسؤولية:</h3><ul className="list-disc pr-4 space-y-1"><li>المطور غير مسؤول عن دقة البيانات التي يضعها المستخدمون (مثل فصيلة الدم)، ويجب على الجهة الطبية المستقبلة للمتبرع إجراء التحاليل اللازمة للتأكد.</li><li>المطور غير مسؤول عن أي سوء استخدام لبيانات التواصل (رقم الهاتف) خارج إطار هذا التطبيق.</li><li>يُمنع منعاً باتاً طلب أي مقابل مادي مقابل التبرع، والتطبيق مخصص للعمل التطوعي المجاني فقط. أي بلاغ عن محاولة بيع أو شراء دم سيؤدي لحظر الحساب نهائياً والتبليغ عنه لدى السلطات المعنية.</li></ul><h3 className="font-bold text-slate-800 dark:text-white mt-4">4. الموافقة:</h3><p>بقيامك بالتسجيل في التطبيق، أنت تقر بقرائتك لهذه الشروط وتوافق على مشاركة فصيلة دمك ومعلومات التواصل الخاصة بك مع المستخدمين الآخرين لغرض التبرع.</p></div><button onClick={() => { setAcceptTerms(true); setShowTerms(false); }} className="w-full mt-6 h-12 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition">موافق</button></BaseModal>
+           <BaseModal isOpen={showTerms} onClose={() => setShowTerms(false)}>
+              <h2 className="text-xl font-black text-emerald-600 mb-4">شروط الاستخدام وإخلاء المسؤولية</h2>
+              <div className="text-xs text-slate-600 dark:text-slate-300 space-y-3 text-right leading-relaxed pr-2">
+                  <h3 className="font-bold text-slate-800 dark:text-white">1. طبيعة الخدمة:</h3><p>هذا التطبيق هو منصة تقنية تهدف للربط الإنساني والتطوعي بين المتبرعين بالدم والمحتاجين إليه. التطبيق ليس جهة طبية ولا يقوم بجمع الدم أو تخزينه.</p>
+                  <h3 className="font-bold text-slate-800 dark:text-white mt-4">2. حماية المعطيات الشخصية:</h3><p>التزاماً بالقانون 18-07 المتعلق بحماية المعطيات الشخصية، نؤكد أن البيانات المدخلة تُستخدم حصراً لغرض التنسيق للتبرع.</p>
+                  <h3 className="font-bold text-slate-800 dark:text-white mt-4">3. إخلاء المسؤولية:</h3><ul className="list-disc pr-4 space-y-1"><li>المطور غير مسؤول عن دقة البيانات التي يضعها المستخدمون.</li><li>يُمنع منعاً باتاً طلب أي مقابل مادي مقابل التبرع.</li></ul>
+                  <h3 className="font-bold text-slate-800 dark:text-white mt-4">4. الموافقة:</h3><p>بقيامك بالتسجيل في التطبيق، أنت تقر بقرائتك لهذه الشروط.</p>
+              </div>
+              <button onClick={() => { setAcceptTerms(true); setShowTerms(false); }} className="w-full mt-6 h-12 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition">موافق</button>
+           </BaseModal>
         </div>
       );
     }
 
-    // هنا تكمن الإضافة البصرية الجميلة لأزرار التحكم
     function ProfileView({ user, donorData, showNotification, isDark, toggleTheme, setView, notifications, markAsRead, deleteNotification, rejectRequest }) {
       const [loading, setLoading] = useState(false); const [modalConfig, setModalConfig] = useState({ isOpen: false });
       
       const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
-      const handleLogout = () => setModalConfig({ isOpen: true, title: "خروج", message: "متأكد من تسجيل الخروج؟", isDestructive: true, confirmText: "خروج", action: async () => { await signOut(auth); window.location.reload(); } });
+      const handleLogout = () => setModalConfig({ isOpen: true, title: "خروج", message: "متأكد؟", isDestructive: true, confirmText: "خروج", action: async () => { await signOut(auth); setView('home'); closeModal(); } });
       
       if (!donorData) return <div className="min-h-screen flex justify-center items-center"><Loader2 className="animate-spin text-emerald-500" size={40}/></div>;
 
@@ -671,15 +730,15 @@
       }
 
       const toggleStatus = async () => {
-        if (!isEligibleToDonate) return showNotification('error', `متبقي ${daysRemaining} يوماً لانتهاء فترة النقاهة.`);
-        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { status: donorData.status !== 0 ? 0 : 1 }, { merge: true }); showNotification('success', 'تم التحديث بنجاح'); } catch (e) {} finally { setLoading(false); }
+        if (!isEligibleToDonate) return showNotification('error', `متبقي ${daysRemaining} يوماً.`);
+        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { status: donorData.status !== 0 ? 0 : 1 }, { merge: true }); showNotification('success', 'تم التحديث'); } catch (e) {} finally { setLoading(false); }
       };
 
       const togglePhoneVisibility = async () => {
-        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { isPhoneHidden: !donorData.isPhoneHidden }, { merge: true }); showNotification('success', 'تم تحديث خصوصية الهاتف'); } catch (e) {} finally { setLoading(false); }
+        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { isPhoneHidden: !donorData.isPhoneHidden }, { merge: true }); showNotification('success', 'تم التحديث'); } catch (e) {} finally { setLoading(false); }
       };
 
-      const handleDonatedToday = () => setModalConfig({ isOpen: true, title: "تأكيد التبرع", message: "سيتم إخفاء رقمك وحسابك تلقائياً لـ 3 أشهر للراحة.", isDestructive: false, confirmText: "تأكيد وبدء النقاهة", action: async () => { setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { lastDonationDate: serverTimestamp(), status: 0 }, { merge: true }); showNotification('success', 'تم بدء النقاهة.'); } catch (e) {} finally { setLoading(false); } } });
+      const handleDonatedToday = () => setModalConfig({ isOpen: true, title: "تأكيد التبرع", message: "سيتم إخفاء رقمك لـ 3 أشهر.", isDestructive: false, confirmText: "تأكيد", action: async () => { setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { lastDonationDate: serverTimestamp(), status: 0 }, { merge: true }); showNotification('success', 'تم بدء النقاهة.'); closeModal(); } catch (e) {} finally { setLoading(false); } } });
 
       return (
         <div className="pb-32 font-sans" dir="rtl">
@@ -697,7 +756,6 @@
             {!isEligibleToDonate && <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-2xl p-4 mb-4 text-center animate-fadeIn"><CalendarClock size={28} className="text-blue-500 mx-auto mb-2" /><h4 className="font-bold text-blue-700 dark:text-blue-400">فترة نقاهة صحية</h4><div className="bg-white dark:bg-slate-900/50 py-2 rounded-xl text-blue-800 dark:text-blue-300 font-black mt-2">متبقي {daysRemaining} يوماً</div></div>}
 
             <div className="flex gap-4 mb-4">
-                {/* Switch 1: Status */}
                 <div onClick={!loading && isEligibleToDonate ? toggleStatus : undefined} className={`flex-1 relative overflow-hidden glass-panel text-center p-5 rounded-3xl transition-all duration-300 ${isEligibleToDonate ? 'cursor-pointer active:scale-95' : 'opacity-50 grayscale'}`}>
                    <div className={`absolute top-0 left-0 w-full h-1.5 transition-colors duration-300 ${isAvailable ? 'bg-emerald-500 shadow-[0_0_15px_#10b981]' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
                    <h3 className="font-bold mb-3 text-sm text-slate-800 dark:text-white">{isAvailable ? 'حسابي متاح' : 'حسابي مخفي'}</h3>
@@ -706,7 +764,6 @@
                    </div>
                 </div>
 
-                {/* Switch 2: Phone Visibility */}
                 <div onClick={!loading ? togglePhoneVisibility : undefined} className="flex-1 relative overflow-hidden glass-panel text-center p-5 rounded-3xl cursor-pointer active:scale-95 transition-all duration-300">
                    <div className={`absolute top-0 left-0 w-full h-1.5 transition-colors duration-300 ${!donorData.isPhoneHidden ? 'bg-indigo-500 shadow-[0_0_15px_#6366f1]' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
                    <h3 className="font-bold mb-3 text-sm text-slate-800 dark:text-white">{!donorData.isPhoneHidden ? 'رقمي ظاهر' : 'رقمي مخفي'}</h3>
@@ -719,7 +776,7 @@
             {isEligibleToDonate && <button onClick={handleDonatedToday} className="w-full mt-2 bg-white dark:bg-slate-900 border-2 border-emerald-500 dark:border-brand-accent text-emerald-600 dark:text-brand-accent py-4 rounded-[2rem] font-bold flex justify-center items-center gap-2 active:scale-95 transition-transform"><ShieldCheck size={22} /> تبرعت اليوم</button>}
             <div className="mt-8 text-center"><button onClick={handleLogout} className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white font-bold flex justify-center items-center gap-2 w-full py-4 glass-panel rounded-2xl transition-colors"><LogOut size={16} /> تسجيل الخروج</button></div>
           </div>
-          <CustomModal isOpen={modalConfig.isOpen} title={modalConfig.title} message={modalConfig.message} isDestructive={modalConfig.isDestructive} confirmText={modalConfig.confirmText} onCancel={closeModal} onConfirm={() => { modalConfig.action(); closeModal(); }} />
+          <CustomModal isOpen={modalConfig.isOpen} title={modalConfig.title} message={modalConfig.message} isDestructive={modalConfig.isDestructive} confirmText={modalConfig.confirmText} onCancel={closeModal} onConfirm={() => { modalConfig.action(); }} />
         </div>
       );
     }
@@ -727,25 +784,42 @@
     // --- 6. Main App Component ---
 
     function App() {
-      const [user, setUser] = useState(null); const [userProfile, setUserProfile] = useState(null);
-      const [donors, setDonors] = useState([]); const [medicines, setMedicines] = useState([]); const [pharmacies, setPharmacies] = useState([]); const [notifications, setNotifications] = useState([]); 
-      const [view, setView] = useState('home'); const [loading, setLoading] = useState(true); const [loadingMed, setLoadingMed] = useState(true); const [notification, setNotification] = useState(null); const [initializing, setInitializing] = useState(true);
-      const [modalConfig, setModalConfig] = useState({ isOpen: false });
-      
+      const [user, setUser] = useState(null); 
+      const [userProfile, setUserProfile] = useState(null);
+      const [donors, setDonors] = useState([]); 
+      const [medicines, setMedicines] = useState([]); 
+      const [pharmacies, setPharmacies] = useState([]); 
+      const [notifications, setNotifications] = useState([]); 
+      const [view, setView] = useState('home'); 
+      const [loading, setLoading] = useState(true); 
+      const [loadingMed, setLoadingMed] = useState(true); 
+      const [notification, setNotification] = useState(null); 
+      const [initializing, setInitializing] = useState(true);
       const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
 
-      useEffect(() => { if (isDark) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); } else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); } }, [isDark]);
+      useEffect(() => { 
+        if (isDark) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); } 
+        else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); } 
+      }, [isDark]);
 
       useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => {
           if (u) {
             setUser(u);
-            onSnapshot(doc(db, DONORS_COLLECTION, u.uid), (d) => { if (d.exists()) setUserProfile({ id: d.id, ...d.data() }); if (initializing) setInitializing(false); }, () => setInitializing(false));
-            onSnapshot(query(collection(db, NOTIFICATIONS_COLLECTION), orderBy('createdAt', 'desc')), (s) => setNotifications(s.docs.map(d => ({ id: d.id, ...d.data() })).filter(n => n.toUserId === u.uid)));
-          } else { setUser(null); setUserProfile(null); setNotifications([]); if(view === 'profile') setView('home'); setInitializing(false); }
+            onSnapshot(doc(db, DONORS_COLLECTION, u.uid), (d) => { 
+                if (d.exists()) setUserProfile({ id: d.id, ...d.data() }); 
+                setInitializing(false); 
+            }, () => setInitializing(false));
+            
+            onSnapshot(query(collection(db, NOTIFICATIONS_COLLECTION), orderBy('createdAt', 'desc')), (s) => {
+                setNotifications(s.docs.map(d => ({ id: d.id, ...d.data() })).filter(n => n.toUserId === u.uid));
+            });
+          } else { 
+            setUser(null); setUserProfile(null); setNotifications([]); setInitializing(false); 
+          }
         });
         return () => unsubscribe();
-      }, [initializing, view]); 
+      }, []); 
 
       useEffect(() => {
         const unsubDonors = onSnapshot(query(collection(db, DONORS_COLLECTION), orderBy('createdAt', 'desc')), (s) => { setDonors(s.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); });
@@ -757,6 +831,7 @@
       const showNotification = (type, msg) => { setNotification({ type, msg }); setTimeout(() => setNotification(null), 3500); };
       const handleCopy = (phone) => { navigator.clipboard.writeText(phone); showNotification('success', 'تم النسخ'); };
       const toggleTheme = () => setIsDark(!isDark);
+      
       const markAsRead = async (id) => { try { await updateDoc(doc(db, NOTIFICATIONS_COLLECTION, id), { read: true }); } catch(e){} };
       const deleteNotification = async (id) => { try { await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, id)); } catch(e){} };
 
