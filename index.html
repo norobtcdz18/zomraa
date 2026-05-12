@@ -35,11 +35,11 @@
     html.dark body { background: linear-gradient(145deg, #0f172a 0%, #020617 100%); background-attachment: fixed; color: #f8fafc; }
     html.dark .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }
     html.dark .custom-input { background-color: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); color: #f8fafc; }
-    html.dark .custom-input::placeholder { color: #64748b; }
+    html.dark .custom-input::placeholder { color: #94a3b8; }
     html.dark .custom-select option { background-color: #1e293b; color: #f8fafc; }
     
     .no-scrollbar::-webkit-scrollbar { display: none; }
-    .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+    .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
@@ -69,7 +69,7 @@
     const PHARMACIES_COLLECTION = "pharmacies"; 
     const REPORTS_COLLECTION = "reports"; 
     const NOTIFICATIONS_COLLECTION = "notifications";
-    const MAIL_COLLECTION = "mail"; // لإرسال الإيميلات
+    const MAIL_COLLECTION = "mail";
     const COOLDOWN_DAYS = 90;
 
     // --- 1. Reusable Core Components ---
@@ -295,7 +295,7 @@
             <NavBtn id="doctors" icon={HeartPulse} text="أطباء" />
             <NavBtn id="pharmacy" icon={Stethoscope} text="صيدليات" />
             
-            <div className="w-[18%]"></div> {/* Spacer for middle button */}
+            <div className="w-[18%]"></div>
             
             <NavBtn id="medicines" icon={Pill} text="أدوية" />
             <button onClick={() => user ? setView('profile') : setView('login')} className={`flex flex-col items-center justify-center gap-1 w-[18%] h-full transition-colors ${['profile','login','register'].includes(view) ? 'text-emerald-500 dark:text-brand-accent' : 'text-slate-400 hover:text-slate-600'}`}>
@@ -303,7 +303,6 @@
                 <span className="text-[10px] font-bold">{user?'حسابي':'دخول'}</span>
             </button>
             
-            {/* الزر العائم في المنتصف - يذهب للرئيسية دائماً. لون الحواف مطابق للأشرطة العلوية والسفلية */}
             <button onClick={() => setView('home')} className={`absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full shadow-[0_8px_20px_rgba(205,235,87,0.3)] flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-slate-300 dark:border-slate-700 ${view === 'home' ? 'bg-emerald-500 dark:bg-brand-accent text-white dark:text-slate-900' : 'bg-brand-accent text-slate-900'}`}>
                 <Heart size={26} fill={view === 'home' ? "currentColor" : "none"} strokeWidth={view === 'home' ? 0 : 2.5} />
             </button>
@@ -719,6 +718,9 @@
       const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
       const handleLogout = () => setModalConfig({ isOpen: true, title: "خروج", message: "متأكد؟", isDestructive: true, confirmText: "خروج", action: async () => { await signOut(auth); setView('home'); closeModal(); } });
       
+      // دالة إلغاء فترة النقاهة (بالخطأ) التي قمنا بإضافتها
+      const handleCancelCooldown = () => setModalConfig({ isOpen: true, title: "إلغاء فترة النقاهة", message: "هل قمت بالضغط على زر التبرع عن طريق الخطأ؟ سيتم إعادة حسابك ليكون متاحاً.", isDestructive: false, confirmText: "نعم، تراجع", action: async () => { setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { lastDonationDate: null, status: 1 }, { merge: true }); showNotification('success', 'تم التراجع وإلغاء فترة النقاهة بنجاح.'); closeModal(); } catch (e) { showNotification('error', 'حدث خطأ.'); } finally { setLoading(false); } } });
+
       if (!donorData) return <div className="min-h-screen flex justify-center items-center"><Loader2 className="animate-spin text-emerald-500" size={40}/></div>;
 
       const isAvailable = donorData.status !== 0;
@@ -730,15 +732,15 @@
       }
 
       const toggleStatus = async () => {
-        if (!isEligibleToDonate) return showNotification('error', `متبقي ${daysRemaining} يوماً.`);
-        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { status: donorData.status !== 0 ? 0 : 1 }, { merge: true }); showNotification('success', 'تم التحديث'); } catch (e) {} finally { setLoading(false); }
+        if (!isEligibleToDonate) return showNotification('error', `متبقي ${daysRemaining} يوماً لانتهاء فترة النقاهة.`);
+        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { status: donorData.status !== 0 ? 0 : 1 }, { merge: true }); showNotification('success', 'تم التحديث بنجاح'); } catch (e) {} finally { setLoading(false); }
       };
 
       const togglePhoneVisibility = async () => {
-        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { isPhoneHidden: !donorData.isPhoneHidden }, { merge: true }); showNotification('success', 'تم التحديث'); } catch (e) {} finally { setLoading(false); }
+        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { isPhoneHidden: !donorData.isPhoneHidden }, { merge: true }); showNotification('success', 'تم تحديث خصوصية الهاتف'); } catch (e) {} finally { setLoading(false); }
       };
 
-      const handleDonatedToday = () => setModalConfig({ isOpen: true, title: "تأكيد التبرع", message: "سيتم إخفاء رقمك لـ 3 أشهر.", isDestructive: false, confirmText: "تأكيد", action: async () => { setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { lastDonationDate: serverTimestamp(), status: 0 }, { merge: true }); showNotification('success', 'تم بدء النقاهة.'); closeModal(); } catch (e) {} finally { setLoading(false); } } });
+      const handleDonatedToday = () => setModalConfig({ isOpen: true, title: "تأكيد التبرع", message: "سيتم إخفاء رقمك وحسابك تلقائياً لـ 3 أشهر للراحة.", isDestructive: false, confirmText: "تأكيد وبدء النقاهة", action: async () => { setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { lastDonationDate: serverTimestamp(), status: 0 }, { merge: true }); showNotification('success', 'تم بدء النقاهة.'); closeModal(); } catch (e) {} finally { setLoading(false); } } });
 
       return (
         <div className="pb-32 font-sans" dir="rtl">
@@ -753,9 +755,19 @@
                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/50 px-4 py-1.5 rounded-full text-sm font-bold text-slate-600 dark:text-slate-400" dir="ltr">{donorData.phone}</div>
             </div>
 
-            {!isEligibleToDonate && <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-2xl p-4 mb-4 text-center animate-fadeIn"><CalendarClock size={28} className="text-blue-500 mx-auto mb-2" /><h4 className="font-bold text-blue-700 dark:text-blue-400">فترة نقاهة صحية</h4><div className="bg-white dark:bg-slate-900/50 py-2 rounded-xl text-blue-800 dark:text-blue-300 font-black mt-2">متبقي {daysRemaining} يوماً</div></div>}
+            {!isEligibleToDonate && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-2xl p-4 mb-4 text-center animate-fadeIn relative">
+                    <button onClick={handleCancelCooldown} className="absolute top-2 left-2 p-2 bg-white/60 dark:bg-slate-900/50 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 text-[10px] font-bold rounded-full transition shadow-sm">
+                        <RotateCcw size={14}/> تراجع (بالخطأ)
+                    </button>
+                    <CalendarClock size={28} className="text-blue-500 mx-auto mb-2 mt-4" />
+                    <h4 className="font-bold text-blue-700 dark:text-blue-400">فترة نقاهة صحية</h4>
+                    <div className="bg-white dark:bg-slate-900/50 py-2 rounded-xl text-blue-800 dark:text-blue-300 font-black mx-4 mt-2">متبقي {daysRemaining} يوماً</div>
+                </div>
+            )}
 
             <div className="flex gap-4 mb-4">
+                {/* Switch 1: Status */}
                 <div onClick={!loading && isEligibleToDonate ? toggleStatus : undefined} className={`flex-1 relative overflow-hidden glass-panel text-center p-5 rounded-3xl transition-all duration-300 ${isEligibleToDonate ? 'cursor-pointer active:scale-95' : 'opacity-50 grayscale'}`}>
                    <div className={`absolute top-0 left-0 w-full h-1.5 transition-colors duration-300 ${isAvailable ? 'bg-emerald-500 shadow-[0_0_15px_#10b981]' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
                    <h3 className="font-bold mb-3 text-sm text-slate-800 dark:text-white">{isAvailable ? 'حسابي متاح' : 'حسابي مخفي'}</h3>
@@ -764,6 +776,7 @@
                    </div>
                 </div>
 
+                {/* Switch 2: Phone Visibility */}
                 <div onClick={!loading ? togglePhoneVisibility : undefined} className="flex-1 relative overflow-hidden glass-panel text-center p-5 rounded-3xl cursor-pointer active:scale-95 transition-all duration-300">
                    <div className={`absolute top-0 left-0 w-full h-1.5 transition-colors duration-300 ${!donorData.isPhoneHidden ? 'bg-indigo-500 shadow-[0_0_15px_#6366f1]' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
                    <h3 className="font-bold mb-3 text-sm text-slate-800 dark:text-white">{!donorData.isPhoneHidden ? 'رقمي ظاهر' : 'رقمي مخفي'}</h3>
