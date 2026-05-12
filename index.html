@@ -3,22 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Zomraa - قطرة حياة</title>
+  <title>Zomraa v2 - قطرة حياة</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = { 
         darkMode: 'class', 
-        theme: { 
-            extend: { 
-                fontFamily: { sans: ['Cairo', 'sans-serif'] }, 
-                colors: { 
-                    brand: { 
-                        accent: '#CDEB57', 
-                        accentHover: '#b9d64a'
-                    } 
-                } 
-            } 
-        } 
+        theme: { extend: { fontFamily: { sans: ['Cairo', 'sans-serif'] }, colors: { brand: { accent: '#CDEB57', accentHover: '#b9d64a' } } } } 
     }
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -36,9 +26,7 @@
   </script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    body { font-family: 'Cairo', sans-serif; transition: background 0.3s ease, color 0.3s ease; -webkit-tap-highlight-color: transparent; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
-    
-    body { background-color: #F8FAFC; color: #1e293b; }
+    body { font-family: 'Cairo', sans-serif; transition: background 0.3s ease, color 0.3s ease; -webkit-tap-highlight-color: transparent; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); background-color: #F8FAFC; color: #1e293b; }
     .glass-panel { background-color: #ffffff; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
     .custom-input { background-color: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b; }
     .custom-input::placeholder { color: #94a3b8; }
@@ -53,11 +41,6 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    
-    .toggle-btn { flex: 1; padding: 0.5rem; text-align: center; border-radius: 0.75rem; font-size: 0.875rem; font-weight: bold; transition: all 0.2s; cursor: pointer; border: 1px solid transparent; }
-    .toggle-btn.active { background-color: #CDEB57; color: #0f172a; border-color: #b9d64a; box-shadow: 0 2px 10px rgba(205,235,87,0.2); }
-    .toggle-btn.inactive { background-color: #f1f5f9; color: #64748b; }
-    html.dark .toggle-btn.inactive { background-color: rgba(15, 23, 42, 0.5); border-color: rgba(255, 255, 255, 0.1); color: #94a3b8; }
   </style>
 </head>
 <body>
@@ -71,88 +54,161 @@
     import { 
         Search, MapPin, Map, Plus, User, Phone, Copy, CheckCircle2, AlertTriangle, 
         X, Loader2, Droplet, Lock, Mail, Eye, EyeOff, ArrowRight, LogOut, 
-        Power, Edit2, Save, Trash2, Plane, Info, HelpCircle, Github, Globe, Moon, Sun, 
+        Power, Edit2, Save, Trash2, Plane, Info, HelpCircle, Moon, Sun, 
         Home, Heart, CalendarClock, ShieldCheck, RotateCcw, Stethoscope, Pill, 
         Clock, HeartHandshake, Star, Flag, FileText, Ban, AlertOctagon, Wallet, 
-        Package, ChevronDown, ChevronUp, MessageSquare, Bell, HeartPulse, 
-        EyeOff as EyeOffIcon 
+        Package, ChevronDown, ChevronUp, MessageSquare, Bell, HeartPulse, EyeOff as EyeOffIcon
     } from 'lucide-react';
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyANXo96l5_hP1iTH_K8TaYixdGHJwr6x-0",
-      authDomain: "blod-6a25b.firebaseapp.com",
-      projectId: "blod-6a25b",
-      storageBucket: "blod-6a25b.firebasestorage.app",
-      messagingSenderId: "766563585970",
-      appId: "1:766563585970:web:ad99353f2dbcbf759a1eab"
-    };
-
+    const firebaseConfig = { apiKey: "AIzaSyANXo96l5_hP1iTH_K8TaYixdGHJwr6x-0", authDomain: "blod-6a25b.firebaseapp.com", projectId: "blod-6a25b", storageBucket: "blod-6a25b.firebasestorage.app", messagingSenderId: "766563585970", appId: "1:766563585970:web:ad99353f2dbcbf759a1eab" };
     let app; try { app = initializeApp(firebaseConfig); } catch(e) {}
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const DONORS_COLLECTION = "donors";
-    const MEDICINES_COLLECTION = "medicines"; 
-    const PHARMACIES_COLLECTION = "pharmacies";
-    const REPORTS_COLLECTION = "reports";
-    const NOTIFICATIONS_COLLECTION = "notifications";
-
+    const auth = getAuth(app); const db = getFirestore(app);
+    const DONORS_COLLECTION = "donors"; const MEDICINES_COLLECTION = "medicines"; const PHARMACIES_COLLECTION = "pharmacies"; const REPORTS_COLLECTION = "reports"; const NOTIFICATIONS_COLLECTION = "notifications";
     const COOLDOWN_DAYS = 90;
 
-    // --- Components ---
+    // --- 1. Reusable Core Components ---
+
+    function BaseModal({ isOpen, onClose, children, hideClose = false }) {
+        if (!isOpen) return null;
+        return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm animate-fadeIn p-4">
+                <div className="glass-panel w-full max-w-sm rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative overflow-hidden text-right max-h-[90vh] overflow-y-auto no-scrollbar">
+                    {!hideClose && <button onClick={onClose} className="absolute top-4 left-4 p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition z-10"><X size={20}/></button>}
+                    {children}
+                </div>
+            </div>
+        );
+    }
+
+    function EmptyState({ icon: Icon, title, desc }) {
+        return (
+            <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800 animate-fadeIn">
+                <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center opacity-70"><Icon size={40} className="text-slate-300 dark:text-slate-600"/></div>
+                <p className="text-slate-600 dark:text-slate-300 font-bold">{title}</p>
+                <p className="text-slate-400 dark:text-slate-500 text-sm mt-2 px-4 leading-relaxed">{desc}</p>
+            </div>
+        );
+    }
+
+    function Toast({ notification }) {
+      if (!notification) return null;
+      const isSuccess = notification.type === 'success';
+      return (
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl border z-[110] flex items-center gap-2 font-bold animate-fadeIn w-max max-w-[90%] ${isSuccess ? 'bg-brand-accent text-slate-900 border-brand-accentHover' : 'glass-panel text-red-500 dark:text-red-400 border-red-200 dark:border-red-500/30'}`}>
+          {isSuccess ? <CheckCircle2 size={18} className="shrink-0"/> : <AlertTriangle size={18} className="shrink-0"/>} 
+          <span className="text-sm">{notification.msg}</span>
+        </div>
+      );
+    }
+
+    // --- 2. Modals ---
+
+    function CustomModal({ isOpen, title, message, onConfirm, onCancel, isDestructive, confirmText }) {
+      return (
+        <BaseModal isOpen={isOpen} hideClose={true}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto ${isDestructive ? 'bg-red-100 dark:bg-red-500/20 text-red-500 dark:text-red-400' : 'bg-emerald-100 dark:bg-brand-accent/20 text-emerald-600 dark:text-brand-accent'}`}>{isDestructive ? <AlertTriangle size={24}/> : <Info size={24}/>}</div>
+            <h3 className="text-xl font-black text-slate-800 dark:text-white text-center mb-2">{title}</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-center mb-6 text-sm leading-relaxed whitespace-pre-line">{message}</p>
+            <div className="flex gap-3">
+              <button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition">إلغاء</button>
+              <button onClick={onConfirm} className={`flex-1 py-3 rounded-xl font-bold transition shadow-lg ${isDestructive ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-emerald-500 dark:bg-brand-accent text-white dark:text-slate-900 hover:bg-emerald-600'}`}>{confirmText}</button>
+            </div>
+        </BaseModal>
+      );
+    }
+
+    function ForgotPasswordModal({ isOpen, onClose, showNotification }) {
+      const [email, setEmail] = useState(''); const [loading, setLoading] = useState(false);
+      const handleReset = async (e) => {
+        e.preventDefault(); if(!email) return; setLoading(true);
+        try { await sendPasswordResetEmail(auth, email); showNotification('success', 'تم إرسال الرابط.'); onClose(); } 
+        catch (err) { showNotification('error', 'البريد غير صحيح.'); } finally { setLoading(false); }
+      };
+      return (
+        <BaseModal isOpen={isOpen} onClose={onClose}>
+            <div className="w-16 h-16 bg-emerald-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner"><Lock size={30} className="text-emerald-500 dark:text-brand-accent"/></div>
+            <h3 className="text-xl font-black text-slate-800 dark:text-white text-center mb-2">نسيت كلمة المرور؟</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-center mb-6 text-sm">أدخل بريدك المسجل لدينا.</p>
+            <form onSubmit={handleReset} className="space-y-4">
+                <div className="relative"><input type="email" placeholder="البريد الإلكتروني" className="custom-input w-full h-12 px-4 rounded-xl text-right pr-4 pl-12 outline-none focus:border-brand-accent" value={email} onChange={e=>setEmail(e.target.value)} required /><Mail size={20} className="absolute left-4 top-3.5 text-slate-400"/></div>
+                <button type="submit" disabled={loading} className="w-full h-12 bg-emerald-500 dark:bg-brand-accent text-white dark:text-slate-900 rounded-xl font-bold shadow-lg flex items-center justify-center">{loading ? <Loader2 className="animate-spin" size={20}/> : 'إرسال الرابط'}</button>
+            </form>
+        </BaseModal>
+      );
+    }
+
+    function AboutModal({ isOpen, onClose }) {
+      return (
+        <BaseModal isOpen={isOpen} onClose={onClose}>
+            <div className="text-center">
+                <div className="w-20 h-20 bg-emerald-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner"><Droplet size={40} className="text-emerald-500 dark:text-brand-accent" fill="currentColor"/></div>
+                <h2 className="text-2xl font-black text-emerald-600 dark:text-brand-accent mb-1">Zomraa</h2>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-6">Zomraa v2 (2.0.0)</p>
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 mb-6 border border-slate-100 dark:border-slate-800"><p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">تطبيق خيري وطبي متكامل، يهدف لربط المتبرعين بالمحتاجين، وتوفير الأدوية المفقودة بسهولة.</p></div>
+                <div className="space-y-2"><p className="text-xs font-bold text-slate-400">تصميم وتطوير</p><h3 className="text-lg font-bold text-slate-800 dark:text-white">مطور التطبيق</h3></div>
+            </div>
+        </BaseModal>
+      );
+    }
+
+    function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
+      const [reason, setReason] = useState(''); const [loading, setLoading] = useState(false);
+      const handleSubmit = async () => { if(!reason) return; setLoading(true); await onConfirm(reason); setLoading(false); };
+      return (
+        <BaseModal isOpen={isOpen} onClose={onClose}>
+            <div className="w-12 h-12 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><Flag size={24} className="text-red-500 dark:text-red-400"/></div>
+            <h3 className="text-xl font-black text-slate-800 dark:text-white text-center mb-2">إبلاغ عن متبرع</h3>
+            <p className="text-slate-500 text-center mb-4 text-sm">أنت تبلغ عن <strong className="text-slate-700 dark:text-white">{donorName}</strong>.</p>
+            <div className="space-y-2 mb-6">
+                {['الرقم خاطئ / لا يعمل', 'الشخص لا يرد أبداً', 'يطلب مقابلاً مالياً', 'حساب وهمي'].map(r => (
+                    <label key={r} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${reason===r?'bg-red-50 border-red-500 text-red-700 dark:bg-red-500/20 dark:border-red-400 dark:text-red-300':'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-900/50 dark:border-slate-700'}`}>
+                        <input type="radio" value={r} checked={reason===r} onChange={()=>setReason(r)} className="w-4 h-4 accent-red-500" />
+                        <span className="text-sm font-bold">{r}</span>
+                    </label>
+                ))}
+            </div>
+            <button onClick={handleSubmit} disabled={loading || !reason} className="w-full h-12 bg-red-500 text-white rounded-xl font-bold flex items-center justify-center disabled:opacity-50">{loading ? <Loader2 className="animate-spin" size={20}/> : 'تأكيد الإبلاغ'}</button>
+        </BaseModal>
+      );
+    }
 
     function NotificationsModal({ isOpen, onClose, notifications = [], markAsRead, deleteNotification, rejectRequest, showNotification }) {
       if (!isOpen) return null;
-      
       const safeNotifications = Array.isArray(notifications) ? notifications : [];
       const unreadCount = safeNotifications.filter(n => !n.read).length;
 
-      const handleCopyText = (e, text) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(text);
-          showNotification('success', 'تم نسخ النص');
-      };
-
       return (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm animate-fadeIn p-0 sm:p-4">
-          <div className="glass-panel w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl relative border-t sm:border border-slate-200 dark:border-slate-700 animate-[translateY_0.3s_ease-out] max-h-[90vh] overflow-y-auto no-scrollbar">
-            <button onClick={onClose} className="absolute top-6 left-6 p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition"><X size={20}/></button>
+          <div className="glass-panel w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl relative border-t sm:border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto no-scrollbar animate-[translateY_0.3s_ease-out]">
+            <button onClick={onClose} className="absolute top-6 left-6 p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-800 dark:hover:text-white transition"><X size={20}/></button>
             <h3 className="text-xl font-black text-slate-800 dark:text-white text-right mb-6 mt-2 flex items-center justify-end gap-2">
                 {unreadCount > 0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{unreadCount}</span>}
                 الإشعارات <Bell className="text-emerald-500 dark:text-brand-accent"/> 
             </h3>
-            
             {safeNotifications.length === 0 ? (
-                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 text-center flex flex-col items-center justify-center">
-                   <Bell size={40} className="text-slate-300 dark:text-slate-600 mb-3 opacity-50"/>
-                   <p className="text-slate-600 dark:text-slate-300 font-bold">لا توجد إشعارات حالياً</p>
-                   <p className="text-slate-400 dark:text-slate-500 text-xs mt-2 leading-relaxed">عندما يطلب أحدهم تبرعك، سيظهر لك إشعار هنا.</p>
-                </div>
+                <EmptyState icon={Bell} title="لا توجد إشعارات حالياً" desc="عندما يطلب أحدهم تبرعك، سيظهر لك إشعار هنا." />
             ) : (
                 <div className="space-y-3">
                    {safeNotifications.map(notif => {
                        const notifDate = notif.createdAt?.toDate ? new Intl.DateTimeFormat('ar-DZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(notif.createdAt.toDate()) : 'الآن';
                        const callerPhone = notif.fromUserPhone ? (String(notif.fromUserPhone).startsWith('0') ? notif.fromUserPhone : `0${notif.fromUserPhone}`) : null;
                        const isRequest = notif.type === 'request';
-
                        return (
-                           <div key={notif.id} className={`p-4 rounded-2xl border transition-colors text-right relative ${notif.read ? 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 opacity-70' : 'bg-white dark:bg-slate-800 border-emerald-200 dark:border-brand-accent/30 shadow-sm'}`} onClick={() => !notif.read && markAsRead && markAsRead(notif.id)}>
+                           <div key={notif.id} className={`p-4 rounded-2xl border transition-colors text-right relative ${notif.read ? 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 opacity-70' : 'bg-white dark:bg-slate-800 border-emerald-200 dark:border-brand-accent/30 shadow-sm'}`} onClick={() => !notif.read && markAsRead(notif.id)}>
                                {!notif.read && <div className="absolute top-4 left-4 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></div>}
-                               
                                <h4 className="font-bold text-slate-800 dark:text-white text-sm mb-1">{notif.title}</h4>
                                <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed mb-3 whitespace-pre-line">{notif.body}</p>
-                               
                                <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-slate-100 dark:border-slate-700">
                                    {isRequest && callerPhone && (
                                        <div className="flex items-center gap-2 mb-1 w-full">
-                                            <a href={`tel:${callerPhone}`} onClick={(e) => e.stopPropagation()} className="flex-1 bg-emerald-500 text-white p-2 rounded-xl text-xs font-bold text-center hover:bg-emerald-600 transition flex items-center justify-center gap-1"><Phone size={14}/> اتصال</a>
-                                            <button onClick={(e) => { e.stopPropagation(); rejectRequest && rejectRequest(notif); }} className="flex-1 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-500/30 text-red-500 dark:text-red-400 p-2 rounded-xl text-xs font-bold hover:bg-red-50 dark:hover:bg-red-500/10 transition flex items-center justify-center gap-1">اعتذار ❌</button>
+                                            <a href={`tel:${callerPhone}`} onClick={(e) => e.stopPropagation()} className="flex-1 bg-emerald-500 text-white p-2 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1"><Phone size={14}/> اتصال</a>
+                                            <button onClick={(e) => { e.stopPropagation(); rejectRequest(notif); }} className="flex-1 bg-white dark:bg-slate-900 border border-red-200 text-red-500 p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1">اعتذار ❌</button>
                                        </div>
                                    )}
-                                   
-                                   <div className="flex items-center justify-between w-full">
+                                   <div className="flex justify-between w-full">
                                         <div className="flex gap-2">
-                                            <button onClick={(e) => handleCopyText(e, notif.body)} className="bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition text-[10px] font-bold flex items-center gap-1"><Copy size={12}/> نسخ</button>
-                                            <button onClick={(e) => { e.stopPropagation(); deleteNotification && deleteNotification(notif.id); }} className="bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 px-3 py-1.5 rounded-lg hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-500/20 dark:hover:text-red-400 transition text-[10px] font-bold flex items-center gap-1"><Trash2 size={12}/> حذف</button>
+                                            <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(notif.body); showNotification('success','تم النسخ'); }} className="bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1"><Copy size={12}/> نسخ</button>
+                                            <button onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }} className="bg-slate-100 dark:bg-slate-700/50 text-slate-500 px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1"><Trash2 size={12}/> حذف</button>
                                         </div>
                                         <span className="text-[10px] text-slate-400 font-bold">{notifDate}</span>
                                    </div>
@@ -167,369 +223,32 @@
       );
     }
 
+    // --- 3. Layout Components ---
+
     function AppHeader({ isDark, toggleTheme, setView, notifications = [], markAsRead, deleteNotification, rejectRequest, showNotification }) {
       const [showAbout, setShowAbout] = useState(false);
       const [showNotifications, setShowNotifications] = useState(false);
-      const safeNotifications = Array.isArray(notifications) ? notifications : [];
-      const unreadCount = safeNotifications.filter(n => !n.read).length;
+      const unreadCount = (Array.isArray(notifications) ? notifications : []).filter(n => !n.read).length;
 
       return (
         <>
           <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800 px-4 py-4 flex justify-between items-center mb-6 shadow-sm relative">
              <div className="flex items-center gap-2 shrink-0">
-                 <button onClick={() => setView('home')} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-brand-accent transition">
-                    <Home size={20}/>
-                 </button>
-                 <button onClick={toggleTheme} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition shrink-0">
-                     {isDark ? <Sun size={20}/> : <Moon size={20}/>}
-                 </button>
+                 <button onClick={() => setView('home')} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 hover:text-emerald-600 dark:hover:text-brand-accent transition"><Home size={20}/></button>
+                 <button onClick={toggleTheme} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 transition"><span className="dark:hidden"><Moon size={20}/></span><span className="hidden dark:block"><Sun size={20}/></span></button>
              </div>
-             <div className="absolute left-1/2 -translate-x-1/2 text-center font-black text-emerald-600 dark:text-brand-accent text-2xl tracking-wider">
-                 Zomraa
-             </div>
+             <div className="absolute left-1/2 -translate-x-1/2 text-center font-black text-emerald-600 dark:text-brand-accent text-2xl tracking-wider">Zomraa</div>
              <div className="flex items-center gap-2 shrink-0">
-                 <button onClick={() => setShowNotifications(true)} className="relative w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-brand-accent transition">
+                 <button onClick={() => setShowNotifications(true)} className="relative w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 transition hover:text-emerald-500">
                     <Bell size={20}/>
-                    {unreadCount > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-slate-900 shadow-sm animate-pulse">
-                            {unreadCount > 9 ? '+9' : unreadCount}
-                        </span>
-                    )}
+                    {unreadCount > 0 && <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-slate-900 shadow-sm animate-pulse">{unreadCount > 9 ? '+9' : unreadCount}</span>}
                  </button>
-                 <button onClick={() => setShowAbout(true)} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition">
-                    <HelpCircle size={20}/>
-                 </button>
+                 <button onClick={() => setShowAbout(true)} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 transition"><HelpCircle size={20}/></button>
              </div>
           </div>
           <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
-          <NotificationsModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} notifications={safeNotifications} markAsRead={markAsRead} deleteNotification={deleteNotification} rejectRequest={rejectRequest} showNotification={showNotification} />
+          <NotificationsModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} notifications={notifications} markAsRead={markAsRead} deleteNotification={deleteNotification} rejectRequest={rejectRequest} showNotification={showNotification} />
         </>
-      );
-    }
-
-    function CustomModal({ isOpen, title, message, onConfirm, onCancel, isDestructive, confirmText, showCancel = true }) {
-      if (!isOpen) return null;
-      return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm animate-fadeIn p-4">
-          <div className="glass-panel w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative overflow-hidden">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto relative z-10 ${isDestructive ? 'bg-red-100 dark:bg-red-500/20 text-red-500 dark:text-red-400' : 'bg-emerald-100 dark:bg-brand-accent/20 text-emerald-600 dark:text-brand-accent'}`}>{isDestructive ? <AlertTriangle size={24}/> : <Info size={24}/>}</div>
-            <h3 className="text-xl font-black text-slate-800 dark:text-white text-center mb-2 relative z-10">{title}</h3>
-            <p className="text-slate-500 dark:text-slate-400 text-center mb-6 text-sm leading-relaxed whitespace-pre-line relative z-10">{message}</p>
-            <div className="flex gap-3 relative z-10">
-              {showCancel && <button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 dark:border dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition">إلغاء</button>}
-              <button onClick={onConfirm} className={`flex-1 py-3 rounded-xl font-bold transition shadow-lg ${isDestructive ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-emerald-500 dark:bg-brand-accent text-white dark:text-slate-900 hover:bg-emerald-600 dark:hover:bg-brand-accentHover'}`}>{confirmText || 'تأكيد'}</button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    function ForgotPasswordModal({ isOpen, onClose, showNotification }) {
-      const [resetEmail, setResetEmail] = useState('');
-      const [loading, setLoading] = useState(false);
-      if (!isOpen) return null;
-
-      const handleReset = async (e) => {
-        e.preventDefault(); if(!resetEmail) return; setLoading(true);
-        try { await sendPasswordResetEmail(auth, resetEmail); showNotification('success', 'تم إرسال رابط لإعادة التعيين عبر بريدك بنجاح.'); onClose(); } 
-        catch (error) { showNotification('error', 'البريد غير صحيح أو غير مسجل.'); } finally { setLoading(false); }
-      };
-
-      return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm animate-fadeIn p-4">
-          <div className="glass-panel w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative overflow-hidden">
-            <button onClick={onClose} className="absolute top-4 left-4 p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition"><X size={20}/></button>
-            <div className="w-16 h-16 bg-emerald-50 dark:bg-slate-800 border border-emerald-100 dark:border-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner"><Lock size={30} className="text-emerald-500 dark:text-brand-accent"/></div>
-            <h3 className="text-xl font-black text-slate-800 dark:text-white text-center mb-2">نسيت كلمة المرور؟</h3>
-            <p className="text-slate-500 dark:text-slate-400 text-center mb-6 text-sm leading-relaxed">أدخل بريدك المسجل لدينا.</p>
-            <form onSubmit={handleReset} className="space-y-4">
-                <div className="relative"><input type="email" placeholder="البريد الإلكتروني" className="custom-input w-full h-12 px-4 rounded-xl text-right pr-4 pl-12 outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all" value={resetEmail} onChange={e => setResetEmail(e.target.value)} required /><div className="absolute left-4 top-3.5 text-slate-400 dark:text-slate-400"><Mail size={20}/></div></div>
-                <button type="submit" disabled={loading} className="w-full h-12 bg-emerald-500 dark:bg-brand-accent text-white dark:text-slate-900 rounded-xl font-bold shadow-lg hover:bg-emerald-600 dark:hover:bg-brand-accentHover transition-all flex items-center justify-center gap-2">{loading ? <Loader2 className="animate-spin" size={20}/> : 'إرسال الرابط'}</button>
-            </form>
-          </div>
-        </div>
-      );
-    }
-
-    function AboutModal({ isOpen, onClose }) {
-      if (!isOpen) return null;
-      return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm animate-fadeIn p-4">
-          <div className="glass-panel w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center relative">
-            <button onClick={onClose} className="absolute top-4 left-4 p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition"><X size={20}/></button>
-            <div className="w-20 h-20 bg-emerald-50 dark:bg-slate-800 border border-emerald-100 dark:border-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner"><Droplet size={40} className="text-emerald-500 dark:text-brand-accent" fill="currentColor"/></div>
-            <h2 className="text-2xl font-black text-emerald-600 dark:text-brand-accent mb-1">Zomraa</h2>
-            <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mb-6">V 6.6.0 (Stable)</p>
-            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 mb-6 border border-slate-100 dark:border-slate-800">
-               <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">تطبيق خيري وطبي متكامل، يهدف لربط المتبرعين بالمحتاجين، ومتابعة الصيدليات المناوبة، وتوفير الأدوية المفقودة بسهولة.</p>
-            </div>
-            <div className="space-y-2"><p className="text-xs font-bold text-slate-400 dark:text-slate-500">تصميم وتطوير</p><h3 className="text-lg font-bold text-slate-800 dark:text-white">مطور التطبيق</h3></div>
-          </div>
-        </div>
-      );
-    }
-
-    function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
-      const [reason, setReason] = useState('');
-      const [loading, setLoading] = useState(false);
-      if (!isOpen) return null;
-
-      const handleSubmit = async () => { if(!reason) return; setLoading(true); await onConfirm(reason); setLoading(false); };
-
-      return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm animate-fadeIn p-4">
-          <div className="glass-panel w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative overflow-hidden text-right">
-            <button onClick={onClose} className="absolute top-4 left-4 p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition"><X size={20}/></button>
-            <div className="w-12 h-12 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4"><Flag size={24} className="text-red-500 dark:text-red-400"/></div>
-            <h3 className="text-xl font-black text-slate-800 dark:text-white text-center mb-2">إبلاغ عن متبرع</h3>
-            <p className="text-slate-500 dark:text-slate-400 text-center mb-4 text-sm leading-relaxed">أنت تقوم بالإبلاغ عن <strong className="text-slate-700 dark:text-white">{donorName}</strong>. يرجى تحديد السبب لمساعدة الإدارة.</p>
-            
-            <div className="space-y-2 mb-6">
-                {['الرقم خاطئ / لا يعمل', 'الشخص لا يرد أبداً', 'يطلب مقابلاً مالياً', 'ليس متبرعاً (حساب وهمي)'].map(r => (
-                    <label key={r} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${reason === r ? 'bg-red-50 border-red-500 text-red-700 dark:bg-red-500/20 dark:border-red-400 dark:text-red-300' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-900/50 dark:border-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-                        <input type="radio" name="reportReason" value={r} checked={reason === r} onChange={() => setReason(r)} className="w-4 h-4 accent-red-500" />
-                        <span className="text-sm font-bold">{r}</span>
-                    </label>
-                ))}
-            </div>
-
-            <button onClick={handleSubmit} disabled={loading || !reason} className="w-full h-12 bg-red-500 text-white rounded-xl font-bold shadow-lg hover:bg-red-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-               {loading ? <Loader2 className="animate-spin" size={20}/> : 'تأكيد الإبلاغ'}
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    function DonorCard({ donor, user, onCopyPhone, onRate, onReport, onSendRequest }) {
-      const isAvailable = donor?.status !== 0;
-      const isPhoneHidden = donor?.isPhoneHidden === true;
-      const safePhone = donor?.phone ? String(donor.phone) : '';
-      const fullPhone = safePhone.startsWith('0') ? safePhone : `0${safePhone}`;
-      const isTypeO = donor?.bloodType && String(donor.bloodType).includes('O');
-      
-      const safeRaters = Array.isArray(donor?.raters) ? donor.raters : [];
-      const ratingCount = safeRaters.length;
-      const hasRated = user && safeRaters.includes(user.uid);
-
-      const [cooldown, setCooldown] = useState(false);
-      
-      useEffect(() => {
-          if (!donor?.id) return;
-          const lastSent = localStorage.getItem(`notify_${donor.id}`);
-          if (lastSent) {
-              const now = new Date().getTime();
-              const diff = now - parseInt(lastSent, 10);
-              if (diff < (3 * 60 * 60 * 1000)) { setCooldown(true); } 
-              else { localStorage.removeItem(`notify_${donor.id}`); }
-          }
-      }, [donor?.id]);
-
-      const handleNotifyClick = () => {
-          if (!donor) return;
-          onSendRequest(donor, () => {
-              localStorage.setItem(`notify_${donor.id}`, new Date().getTime().toString());
-              setCooldown(true);
-          });
-      };
-
-      if (!donor) return null;
-
-      return (
-        <div className={`glass-panel rounded-[2rem] p-5 mb-4 relative mx-1 animate-fadeIn transition-all duration-300 ${!isAvailable ? 'opacity-50 grayscale' : 'hover:border-emerald-200 dark:hover:border-brand-accent/30'}`}>
-          <div className="flex items-center justify-between mb-3">
-             <div className={`${isTypeO ? 'bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-500/20' : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-brand-accent border border-slate-200 dark:border-slate-700'} w-12 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-sm shrink-0`}><span dir="ltr">{donor.bloodType || '-'}</span></div>
-             <div className="flex-1 text-right px-4 overflow-hidden">
-               <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1 truncate flex items-center justify-end gap-2">{donor.username || 'فاعل خير'}</h3>
-               <div className="flex items-center justify-end gap-1 text-slate-500 dark:text-slate-400 text-sm truncate"><span>{donor.neighborhood || 'الأمير عبد القادر'}</span><MapPin size={14} className="opacity-70 shrink-0" /></div>
-             </div>
-             <div className="w-12 h-12 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-emerald-500 dark:text-brand-accent border border-slate-100 dark:border-slate-800 shadow-inner shrink-0 overflow-hidden">
-                 {isPhoneHidden ? <EyeOffIcon size={20} className="text-slate-400"/> : <User size={20} />}
-             </div>
-          </div>
-
-          <div className="flex flex-col items-end gap-2 border-t border-slate-100 dark:border-slate-800/50 pt-3">
-             {isAvailable ? (
-               <>
-                 <div className="flex items-center justify-between w-full mb-1">
-                     <div className="flex gap-2">
-                         <button onClick={() => onRate(donor)} className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold transition-colors ${hasRated ? 'bg-emerald-100 text-emerald-700 dark:bg-brand-accent/20 dark:text-brand-accent border border-emerald-200 dark:border-brand-accent/30' : 'bg-slate-50 text-slate-500 dark:bg-slate-900/50 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-                             <Star size={14} className={hasRated ? "fill-current text-emerald-500 dark:text-brand-accent" : ""} /> 
-                             <span dir="ltr">{ratingCount}</span>
-                         </button>
-                         <button onClick={() => onReport(donor)} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-slate-400 dark:text-slate-500 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 dark:hover:text-red-400 border border-transparent hover:border-red-100 dark:hover:border-red-500/20 transition-colors" title="إبلاغ"><Flag size={14} /></button>
-                     </div>
-                     <span className="text-xs font-bold text-emerald-500 dark:text-brand-accent flex items-center gap-1">متاح للتبرع <div className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-brand-accent animate-pulse dark:shadow-[0_0_8px_rgba(205,235,87,0.6)] shrink-0"></div></span>
-                 </div>
-                 
-                 <div className="flex flex-col gap-2 w-full mt-2">
-                    <button onClick={cooldown ? null : handleNotifyClick} disabled={cooldown} className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-bold transition active:scale-95 ${cooldown ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 cursor-not-allowed' : 'bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300'}`}>
-                        {cooldown ? <CheckCircle2 size={16}/> : <Bell size={16}/>}
-                        {cooldown ? 'تم إرسال الإشعار (متاح بعد 3 ساعات)' : (isPhoneHidden ? 'إرسال طلب تبرع (الرقم مخفي)' : 'إرسال طلب تبرع (إشعار)')}
-                    </button>
-                    {!isPhoneHidden && (
-                      <div className="flex items-center justify-end gap-2 w-full">
-                        <button onClick={() => onCopyPhone(fullPhone)} className="flex-1 flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 py-2 px-3 rounded-xl text-sm font-bold transition active:scale-95"><Copy size={14} className="shrink-0"/><span dir="ltr" className="truncate">{fullPhone}</span></button>
-                        <a href={`tel:${fullPhone}`} className="bg-brand-accent hover:bg-brand-accentHover text-slate-900 p-2 rounded-xl shadow-[0_4px_12px_rgba(205,235,87,0.2)] transition active:scale-95 shrink-0"><Phone size={18} fill="currentColor"/></a>
-                      </div>
-                    )}
-                 </div>
-               </>
-             ) : (
-                 <div className="flex items-center justify-between w-full">
-                     <span className="text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 w-full justify-center"><Plane size={14} className="shrink-0"/> غير متاح / في فترة نقاهة</span>
-                 </div>
-             )}
-          </div>
-        </div>
-      );
-    }
-
-    function PharmacyCard({ pharmacy, onCopyPhone }) {
-      const safePhone = pharmacy?.phone ? String(pharmacy.phone) : '';
-      const fullPhone = safePhone.startsWith('0') ? safePhone : (safePhone ? `0${safePhone}` : '');
-      if (!pharmacy) return null;
-
-      return (
-        <div className="glass-panel rounded-[2rem] p-5 mb-4 flex items-center justify-between relative mx-1 animate-fadeIn transition-all duration-300 hover:border-emerald-200 dark:hover:border-brand-accent/30 border-l-4 border-l-emerald-500 dark:border-l-brand-accent">
-          <div className="bg-emerald-50 dark:bg-slate-900 text-emerald-500 dark:text-brand-accent border border-emerald-100 dark:border-slate-800 w-14 h-14 rounded-xl flex items-center justify-center shadow-sm shrink-0"><Stethoscope size={28} /></div>
-          <div className="flex-1 text-right px-4 overflow-hidden">
-            <h3 className="font-black text-slate-800 dark:text-white text-lg mb-1 truncate">{pharmacy.name || 'غير معروف'}</h3>
-            <div className="flex items-center justify-end gap-1 text-slate-500 dark:text-slate-400 text-sm mb-3">
-                <span className="truncate">{pharmacy.address || ''}</span><MapPin size={14} className="opacity-70 shrink-0" />
-            </div>
-            
-            <div className="flex items-center justify-end gap-2 w-full mt-2">
-                {pharmacy.mapLink && (
-                    <a href={pharmacy.mapLink} target="_blank" rel="noreferrer" className="flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-500 dark:text-blue-400 rounded-xl transition active:scale-95 shrink-0" title="الموقع على الخريطة">
-                        <Map size={16} />
-                    </a>
-                )}
-                {fullPhone && (
-                    <button onClick={() => onCopyPhone(fullPhone)} className="flex items-center justify-center p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl transition active:scale-95 shrink-0"><Copy size={16} /></button>
-                )}
-                {fullPhone && (
-                    <a href={`tel:${fullPhone}`} className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 dark:bg-brand-accent hover:bg-emerald-600 dark:hover:bg-brand-accentHover text-white dark:text-slate-900 py-2 px-3 rounded-xl text-sm font-bold shadow-md dark:shadow-[0_4px_12px_rgba(205,235,87,0.1)] transition active:scale-95"><span dir="ltr" className="truncate">{fullPhone}</span><Phone size={14} className="shrink-0" fill="currentColor"/></a>
-                )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    function MedicineCard({ medicine, user, userProfile, onFulfill, onCancelFulfill, onComplete, onDelete, showNotification }) {
-      const [showDetails, setShowDetails] = useState(false);
-      if (!medicine) return null;
-      
-      const isPending = medicine.status === 'pending';
-      const isInProgress = medicine.status === 'in_progress';
-      const isCompleted = medicine.status === 'completed';
-      
-      const isMine = user && user.uid === medicine.requesterId;
-      const amIFulfiller = user && user.uid === medicine.fulfillerId;
-      
-      const dateStr = medicine.createdAt?.toDate ? new Intl.DateTimeFormat('ar-DZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(medicine.createdAt.toDate()) : 'الآن';
-
-      let targetPhone = ''; let targetName = ''; let targetRole = '';
-
-      if (isInProgress && isMine) {
-          targetPhone = medicine.fulfillerPhone ? (String(medicine.fulfillerPhone).startsWith('0') ? medicine.fulfillerPhone : `0${medicine.fulfillerPhone}`) : '';
-          targetName = medicine.fulfillerName || 'فاعل خير'; targetRole = 'المتبرع';
-      } else if (isInProgress && amIFulfiller) {
-          targetPhone = medicine.requesterPhone ? (String(medicine.requesterPhone).startsWith('0') ? medicine.requesterPhone : `0${medicine.requesterPhone}`) : '';
-          targetName = medicine.requesterName || 'طالب الدواء'; targetRole = 'طالب الدواء';
-      }
-
-      return (
-        <div className={`glass-panel rounded-[2rem] p-5 mb-4 relative mx-1 transition-all duration-300 ${isCompleted ? 'opacity-70 grayscale' : 'hover:border-emerald-200 dark:hover:border-brand-accent/30'} ${isInProgress && (isMine || amIFulfiller) ? 'ring-2 ring-indigo-500/50 dark:ring-indigo-400/50' : ''}`}>
-          
-          {medicine.isUrgent && !isCompleted && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-1 rounded-full text-[10px] font-black shadow-lg flex items-center gap-1 z-10 animate-pulse">
-                  <AlertOctagon size={12}/> مستعجل
-              </div>
-          )}
-
-          <div className="flex justify-between items-start mb-3 mt-2">
-             {(isPending || isCompleted) && isMine ? (<button onClick={() => onDelete(medicine.id)} className="p-2 bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 rounded-full hover:bg-red-100 transition shrink-0"><Trash2 size={16}/></button>) : (<div className="w-8"></div>)}
-             <div className="flex-1 text-right px-2 overflow-hidden">
-                <h3 className="font-black text-slate-800 dark:text-white text-lg truncate mb-1">{medicine.medicineName || 'دواء'}</h3>
-                <div className="flex items-center justify-end gap-1 text-slate-400 dark:text-slate-500 text-xs mt-1"><span>{dateStr}</span><Clock size={12} className="shrink-0" /><span className="mx-1">•</span><span className="truncate">{medicine.requesterName || 'مريض'}</span><User size={12} className="shrink-0" /></div>
-             </div>
-             <div className={`${isPending ? 'bg-orange-50 dark:bg-orange-500/20 text-orange-500 dark:text-orange-400 border-orange-100 dark:border-orange-500/30' : isInProgress ? 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-500 dark:text-indigo-400 border-indigo-100 dark:border-indigo-500/30' : 'bg-slate-100 dark:bg-slate-900 text-emerald-500 dark:text-brand-accent border-slate-200 dark:border-slate-800'} border w-12 h-12 rounded-xl flex items-center justify-center shadow-sm shrink-0`}><Pill size={24} /></div>
-          </div>
-
-          <button onClick={() => setShowDetails(!showDetails)} className="w-full flex items-center justify-center gap-1 py-2 mb-3 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-bold transition-colors border border-slate-100 dark:border-slate-800 outline-none">
-             <Info size={14}/> {showDetails ? 'إخفاء التفاصيل' : 'عرض تفاصيل الطلب'} {showDetails ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
-          </button>
-
-          {showDetails && (
-             <div className="animate-fadeIn mb-4">
-                <div className="grid grid-cols-2 gap-2 mb-3 text-right">
-                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
-                       <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-0.5 flex items-center justify-end gap-1"><Package size={10}/> الكمية</span>
-                       <span className="text-sm font-black text-slate-700 dark:text-white truncate">{medicine.quantity || 'غير محدد'}</span>
-                   </div>
-                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
-                       <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-0.5 flex items-center justify-end gap-1"><FileText size={10}/> الوصفة</span>
-                       <span className={`text-sm font-black ${medicine.hasPrescription === 'yes' ? 'text-emerald-600 dark:text-brand-accent' : 'text-slate-700 dark:text-white'}`}>{medicine.hasPrescription === 'yes' ? 'متوفرة' : 'غير متوفرة'}</span>
-                   </div>
-                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
-                       <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-0.5 flex items-center justify-end gap-1"><Wallet size={10}/> الدفع</span>
-                       <span className="text-sm font-black text-slate-700 dark:text-white truncate">{medicine.paymentStatus === 'buy' ? 'للشراء' : 'صدقة'}</span>
-                   </div>
-                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
-                       <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-0.5 flex items-center justify-end gap-1"><Ban size={10}/> بالصيدليات</span>
-                       <span className="text-sm font-black text-slate-700 dark:text-white truncate">{medicine.availability === 'unavailable' ? 'مقطوع' : 'غالي'}</span>
-                   </div>
-                </div>
-
-                {medicine.description && (
-                   <div className="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-3 text-right text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line border border-slate-100 dark:border-slate-800">
-                     <span className="block text-[10px] font-bold text-slate-400 mb-1">ملاحظات:</span>
-                     {medicine.description}
-                   </div>
-                )}
-             </div>
-          )}
-          
-          <div className="flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800/50 pt-3">
-              {isPending && !isMine && medicine.approved && (
-                  <button onClick={() => onFulfill(medicine.id, userProfile)} className="w-full py-3 bg-brand-accent hover:bg-brand-accentHover text-slate-900 rounded-xl font-bold shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2"><HeartHandshake size={18}/> أتعهد بتوفير هذا الدواء</button>
-              )}
-              {isPending && isMine && !medicine.approved && (
-                  <div className="w-full py-3 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-xl font-bold text-center text-sm border border-orange-200 dark:border-orange-500/30 flex items-center justify-center gap-2"><Clock size={16}/> طلبك قيد المراجعة من الإدارة</div>
-              )}
-              {isPending && isMine && medicine.approved && (
-                  <div className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl font-bold text-center text-sm border border-slate-200 dark:border-slate-700">طلبك منشور (بانتظار متبرع)</div>
-              )}
-
-              {isInProgress && (isMine || amIFulfiller) && (
-                  <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-4 animate-fadeIn">
-                     <div className="flex items-center justify-center gap-2 text-indigo-700 dark:text-indigo-300 font-black mb-3 text-sm border-b border-indigo-200/50 dark:border-indigo-500/20 pb-3"><MessageSquare size={16}/> مساحة التواصل للتسليم</div>
-                     <p className="text-center text-xs text-indigo-600/80 dark:text-indigo-300/80 font-bold mb-4">يرجى التواصل مع {targetRole} ({targetName}) للاتفاق على طريقة ومكان تسليم الدواء.</p>
-                     <div className="flex items-center justify-between gap-2 mb-5">
-                         {targetPhone ? (
-                             <a href={`tel:${targetPhone}`} className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md transition active:scale-95">اتصال <Phone size={14}/></a>
-                         ) : (
-                             <div className="flex-1 bg-indigo-300 text-white py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2">رقم غير متاح</div>
-                         )}
-                         <span className="text-indigo-800 dark:text-indigo-200 font-bold bg-white dark:bg-slate-900/50 border border-indigo-100 dark:border-indigo-500/30 px-4 py-3 rounded-xl tracking-wider" dir="ltr">{targetPhone || '---'}</span>
-                     </div>
-                     <div className="flex gap-2">
-                         <button onClick={() => onCancelFulfill(medicine.id)} className="flex-1 py-2 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-500/30 text-red-500 dark:text-red-400 rounded-xl font-bold text-xs hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">إلغاء (لم نتفق) ❌</button>
-                         <button onClick={() => onComplete(medicine.id)} className="flex-1 py-2 bg-emerald-500 text-white rounded-xl font-bold text-xs hover:bg-emerald-600 shadow-md transition-colors">تم التسليم بنجاح ✅</button>
-                     </div>
-                  </div>
-              )}
-              {isInProgress && !isMine && !amIFulfiller && (
-                   <div className="w-full py-3 bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 rounded-xl font-bold text-center text-sm border border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2"><Clock size={16}/> يوجد شخص يتواصل مع المريض حالياً</div>
-              )}
-
-              {isCompleted && (
-                  <div className="w-full py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl font-bold text-center text-sm border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center gap-2"><CheckCircle2 size={16}/> تم توفير الدواء والحمد لله</div>
-              )}
-          </div>
-        </div>
       );
     }
 
@@ -537,26 +256,204 @@
       const showNav = ['home', 'profile', 'pharmacy', 'medicines', 'doctors'].includes(view);
       if (!showNav) return null;
 
+      const NavBtn = ({ id, icon: Icon, text }) => (
+          <button onClick={() => setView(id)} className={`flex flex-col items-center justify-center gap-1 w-[18%] h-full transition-colors ${view === id ? 'text-emerald-500 dark:text-brand-accent' : 'text-slate-400 hover:text-slate-600'}`}>
+              <Icon size={22} className={view === id ? "fill-current" : ""} />
+              <span className="text-[10px] font-bold">{text}</span>
+          </button>
+      );
+
       return (
         <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-50 pb-[env(safe-area-inset-bottom)]">
           <div className="flex justify-around items-center h-16 relative px-2">
-            <button onClick={() => setView('doctors')} className={`flex flex-col items-center justify-center gap-1 w-[18%] h-full transition-colors ${view === 'doctors' ? 'text-emerald-500 dark:text-brand-accent' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}><HeartPulse size={22} className={view === 'doctors' ? "text-emerald-500 dark:text-brand-accent" : ""} /><span className="text-[10px] font-bold">أطباء</span></button>
-            <button onClick={() => setView('pharmacy')} className={`flex flex-col items-center justify-center gap-1 w-[18%] h-full transition-colors ${view === 'pharmacy' ? 'text-emerald-500 dark:text-brand-accent' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}><Stethoscope size={22} className={view === 'pharmacy' ? "fill-current" : ""} /><span className="text-[10px] font-bold">صيدليات</span></button>
-            <div className="w-[18%]"></div>
-            <button onClick={() => setView('medicines')} className={`flex flex-col items-center justify-center gap-1 w-[18%] h-full transition-colors ${view === 'medicines' ? 'text-emerald-500 dark:text-brand-accent' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}><Pill size={22} className={view === 'medicines' ? "fill-current" : ""} /><span className="text-[10px] font-bold">أدوية</span></button>
-            <button onClick={() => user ? setView('profile') : setView('login')} className={`flex flex-col items-center justify-center gap-1 w-[18%] h-full transition-colors ${view === 'profile' ? 'text-emerald-500 dark:text-brand-accent' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}><User size={22} className={view === 'profile' ? "fill-current" : ""} /><span className="text-[10px] font-bold">{user ? 'حسابي' : 'دخول'}</span></button>
+            <NavBtn id="doctors" icon={HeartPulse} text="أطباء" />
+            <NavBtn id="pharmacy" icon={Stethoscope} text="صيدليات" />
+            <div className="w-[18%]"></div> {/* Spacer for middle button */}
+            <NavBtn id="medicines" icon={Pill} text="أدوية" />
+            <button onClick={() => user ? setView('profile') : setView('login')} className={`flex flex-col items-center justify-center gap-1 w-[18%] h-full transition-colors ${['profile','login','register'].includes(view) ? 'text-emerald-500 dark:text-brand-accent' : 'text-slate-400 hover:text-slate-600'}`}><User size={22} className={view==='profile'?"fill-current":""} /><span className="text-[10px] font-bold">{user?'حسابي':'دخول'}</span></button>
             
-            {!user ? (
-               <button onClick={() => setView('register')} className="absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 bg-brand-accent text-slate-900 rounded-full shadow-[0_8px_20px_rgba(205,235,87,0.3)] flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-[#F8FAFC] dark:border-slate-900"><Plus size={28} strokeWidth={2.5}/></button>
-            ) : (
-               <button onClick={() => setView('profile')} className={`absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-[#F8FAFC] dark:border-slate-900 ${view === 'profile' ? 'bg-emerald-500 dark:bg-brand-accent text-white dark:text-slate-900' : 'bg-slate-800 dark:bg-slate-800 text-brand-accent'}`}><Heart size={24} fill={view === 'profile' ? "currentColor" : "none"} strokeWidth={view === 'profile' ? 0 : 2} /></button>
-            )}
+            {/* الزر العائم في المنتصف - يذهب للرئيسية دائماً */}
+            <button onClick={() => setView('home')} className={`absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full shadow-[0_8px_20px_rgba(205,235,87,0.3)] flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-[#F8FAFC] dark:border-slate-900 ${view === 'home' ? 'bg-emerald-500 dark:bg-brand-accent text-white dark:text-slate-900' : 'bg-brand-accent text-slate-900'}`}>
+                <Heart size={26} fill={view === 'home' ? "currentColor" : "none"} strokeWidth={view === 'home' ? 0 : 2.5} />
+            </button>
           </div>
         </div>
       );
     }
 
-    // --- Main Views ---
+    // --- 4. Cards ---
+
+    function DonorCard({ donor, user, onCopyPhone, onRate, onReport, onSendRequest }) {
+      if (!donor) return null;
+      const isAvailable = donor.status !== 0; const isPhoneHidden = donor.isPhoneHidden === true;
+      const fullPhone = donor.phone ? (String(donor.phone).startsWith('0') ? donor.phone : `0${donor.phone}`) : '';
+      const safeRaters = Array.isArray(donor.raters) ? donor.raters : [];
+      const hasRated = user && safeRaters.includes(user.uid);
+      const [cooldown, setCooldown] = useState(false);
+      
+      useEffect(() => {
+          const lastSent = localStorage.getItem(`notify_${donor.id}`);
+          if (lastSent && (new Date().getTime() - parseInt(lastSent, 10) < 3 * 60 * 60 * 1000)) setCooldown(true);
+      }, [donor.id]);
+
+      return (
+        <div className={`glass-panel rounded-[2rem] p-5 mb-4 relative mx-1 animate-fadeIn transition-all ${!isAvailable ? 'opacity-50 grayscale' : 'hover:border-emerald-200 dark:hover:border-brand-accent/30'}`}>
+          <div className="flex items-center justify-between mb-3">
+             <div className={`${String(donor.bloodType).includes('O') ? 'bg-red-50 text-red-500 border-red-100 dark:bg-red-500/10 dark:border-red-500/20' : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:border-slate-700'} w-12 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-sm shrink-0`}><span dir="ltr">{donor.bloodType || '-'}</span></div>
+             <div className="flex-1 text-right px-4 overflow-hidden">
+               <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1 truncate flex items-center justify-end gap-2">{donor.username}</h3>
+               <div className="flex items-center justify-end gap-1 text-slate-500 text-sm truncate"><span>{donor.neighborhood}</span><MapPin size={14} className="opacity-70 shrink-0" /></div>
+             </div>
+             <div className="w-12 h-12 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-emerald-500 border border-slate-100 dark:border-slate-800 shadow-inner shrink-0">{isPhoneHidden ? <EyeOffIcon size={20} className="text-slate-400"/> : <User size={20} />}</div>
+          </div>
+
+          <div className="flex flex-col items-end gap-2 border-t border-slate-100 dark:border-slate-800/50 pt-3">
+             {isAvailable ? (
+               <>
+                 <div className="flex items-center justify-between w-full mb-1">
+                     <div className="flex gap-2">
+                         <button onClick={() => onRate(donor)} className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold transition-colors ${hasRated ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:border-emerald-500/30 dark:text-emerald-400' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900/50 dark:border-slate-700'}`}><Star size={14} className={hasRated ? "fill-current text-emerald-500" : ""} /><span dir="ltr">{safeRaters.length}</span></button>
+                         <button onClick={() => onReport(donor)} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"><Flag size={14} /></button>
+                     </div>
+                     <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">متاح للتبرع <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div></span>
+                 </div>
+                 <div className="flex flex-col gap-2 w-full mt-2">
+                    <button onClick={cooldown ? null : ()=>onSendRequest(donor, ()=>setCooldown(true))} disabled={cooldown} className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-bold transition ${cooldown ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-500/20 dark:text-indigo-300 dark:hover:bg-indigo-500/30'}`}>{cooldown ? <CheckCircle2 size={16}/> : <Bell size={16}/>} {cooldown ? 'تم إرسال الإشعار' : (isPhoneHidden ? 'إرسال طلب (الرقم مخفي)' : 'إرسال طلب تبرع')}</button>
+                    {!isPhoneHidden && (
+                      <div className="flex items-center justify-end gap-2 w-full">
+                        <button onClick={() => onCopyPhone(fullPhone)} className="flex-1 flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 py-2 px-3 rounded-xl text-sm font-bold transition text-slate-600 dark:text-slate-300"><Copy size={14}/><span dir="ltr" className="truncate">{fullPhone}</span></button>
+                        <a href={`tel:${fullPhone}`} className="bg-brand-accent text-slate-900 p-2 rounded-xl transition"><Phone size={18} fill="currentColor"/></a>
+                      </div>
+                    )}
+                 </div>
+               </>
+             ) : (
+                 <div className="w-full text-xs font-bold text-slate-400 flex items-center justify-center gap-1 bg-slate-50 dark:bg-slate-900/50 py-2 rounded-xl border border-slate-200 dark:border-slate-800"><Plane size={14}/> غير متاح / نقاهة</div>
+             )}
+          </div>
+        </div>
+      );
+    }
+
+    function PharmacyCard({ pharmacy, onCopyPhone }) {
+      if (!pharmacy) return null;
+      const fullPhone = pharmacy.phone ? (String(pharmacy.phone).startsWith('0') ? pharmacy.phone : `0${pharmacy.phone}`) : '';
+      const workingHours = pharmacy.workingHours || 'من 8:00 صباحاً إلى 10:00 ليلاً';
+
+      return (
+        <div className="glass-panel rounded-3xl p-5 mb-5 relative overflow-hidden transition-all duration-300 border border-emerald-100 dark:border-emerald-500/20 shadow-sm hover:shadow-md mx-1 animate-fadeIn group">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-400 to-brand-accent opacity-80 group-hover:opacity-100 transition-opacity"></div>
+          
+          <div className="flex justify-between items-center mb-5 mt-2 gap-2">
+             <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-500/20 shrink-0">
+                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                 <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">مفتوح</span>
+             </div>
+             
+             <div className="flex-1 text-center overflow-hidden px-1">
+                 <h3 className="font-black text-slate-800 dark:text-white text-base truncate" title={pharmacy.name}>{pharmacy.name}</h3>
+             </div>
+             
+             <div className="bg-emerald-50 dark:bg-slate-800 w-10 h-10 rounded-2xl flex items-center justify-center shadow-inner border border-emerald-100 dark:border-slate-700 shrink-0">
+                 <Stethoscope size={20} className="text-emerald-500" />
+             </div>
+          </div>
+
+          <div className="space-y-3 bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800/50">
+             <div className="flex items-start justify-end gap-3 text-right">
+                 <div className="flex-1 overflow-hidden">
+                     <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mb-0.5">أوقات العمل</p>
+                     <p className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{workingHours}</p>
+                 </div>
+                 <div className="bg-white dark:bg-slate-800 p-2 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 text-slate-400 shrink-0"><Clock size={16} /></div>
+             </div>
+             <div className="flex items-start justify-end gap-3 text-right">
+                 <div className="flex-1 overflow-hidden">
+                     <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mb-0.5">العنوان</p>
+                     <p className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{pharmacy.address || '---'}</p>
+                 </div>
+                 <div className="bg-white dark:bg-slate-800 p-2 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 text-slate-400 shrink-0"><MapPin size={16} /></div>
+             </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+              {pharmacy.mapLink && (
+                  <a href={pharmacy.mapLink} target="_blank" rel="noreferrer" className="flex items-center justify-center p-3 bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 border border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 rounded-xl transition active:scale-95 shrink-0" title="الموقع على الخريطة">
+                      <Map size={20} />
+                  </a>
+              )}
+              {fullPhone ? (
+                  <>
+                      <button onClick={() => onCopyPhone(fullPhone)} className="flex items-center justify-center p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-xl transition active:scale-95 shrink-0" title="نسخ الرقم">
+                          <Copy size={20} />
+                      </button>
+                      <a href={`tel:${fullPhone}`} className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 dark:bg-brand-accent hover:bg-emerald-600 dark:hover:bg-brand-accentHover text-white dark:text-slate-900 py-3 px-4 rounded-xl text-sm font-black shadow-md transition active:scale-95">
+                          <span dir="ltr" className="tracking-wider">{fullPhone}</span><Phone size={18} fill="currentColor"/>
+                      </a>
+                  </>
+              ) : (
+                  <div className="flex-1 flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 py-3 px-4 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-700">رقم الهاتف غير متوفر</div>
+              )}
+          </div>
+        </div>
+      );
+    }
+
+    function MedicineCard({ medicine, user, userProfile, onFulfill, onCancelFulfill, onComplete, onDelete }) {
+      const [showDetails, setShowDetails] = useState(false);
+      if (!medicine) return null;
+      
+      const isMine = user && user.uid === medicine.requesterId;
+      const isInProgress = medicine.status === 'in_progress';
+      const isCompleted = medicine.status === 'completed';
+      const dateStr = medicine.createdAt?.toDate ? new Intl.DateTimeFormat('ar-DZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(medicine.createdAt.toDate()) : 'الآن';
+
+      return (
+        <div className={`glass-panel rounded-[2rem] p-5 mb-4 relative mx-1 transition-all ${isCompleted ? 'opacity-70 grayscale' : 'hover:border-emerald-200 dark:hover:border-brand-accent/30'} ${isInProgress && isMine ? 'ring-2 ring-indigo-500/50' : ''}`}>
+          {medicine.isUrgent && !isCompleted && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-1 rounded-full text-[10px] font-black shadow-lg flex items-center gap-1 animate-pulse"><AlertOctagon size={12}/> مستعجل</div>}
+          <div className="flex justify-between items-start mb-3 mt-2">
+             {isMine ? <button onClick={() => onDelete(medicine.id)} className="p-2 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full hover:bg-red-100 transition shrink-0"><Trash2 size={16}/></button> : <div className="w-8"></div>}
+             <div className="flex-1 text-right px-2 overflow-hidden">
+                <h3 className="font-black text-slate-800 dark:text-white text-lg truncate mb-1">{medicine.medicineName}</h3>
+                <div className="flex items-center justify-end gap-1 text-slate-400 text-xs mt-1"><span>{dateStr}</span><Clock size={12} className="shrink-0" /><span className="mx-1">•</span><span className="truncate">{medicine.requesterName}</span><User size={12} className="shrink-0" /></div>
+             </div>
+             <div className="border border-emerald-100 dark:border-emerald-500/30 bg-slate-50 dark:bg-slate-900 text-emerald-500 w-12 h-12 rounded-xl flex items-center justify-center shadow-sm shrink-0"><Pill size={24} /></div>
+          </div>
+          <button onClick={() => setShowDetails(!showDetails)} className="w-full flex items-center justify-center gap-1 py-2 mb-3 bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-bold border border-slate-100 dark:border-slate-800"><Info size={14}/> {showDetails ? 'إخفاء' : 'عرض التفاصيل'} {showDetails ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</button>
+          
+          {showDetails && (
+             <div className="animate-fadeIn mb-4">
+                <div className="grid grid-cols-2 gap-2 mb-3 text-right">
+                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800"><span className="text-[10px] font-bold text-slate-400 block mb-0.5">الكمية</span><span className="text-sm font-black text-slate-700 dark:text-white">{medicine.quantity}</span></div>
+                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800"><span className="text-[10px] font-bold text-slate-400 block mb-0.5">الوصفة</span><span className={`text-sm font-black ${medicine.hasPrescription === 'yes' ? 'text-emerald-600' : 'text-slate-700 dark:text-white'}`}>{medicine.hasPrescription === 'yes' ? 'متوفرة' : 'لا توجد'}</span></div>
+                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800"><span className="text-[10px] font-bold text-slate-400 block mb-0.5">الدفع</span><span className="text-sm font-black text-slate-700 dark:text-white">{medicine.paymentStatus === 'buy' ? 'للشراء' : 'صدقة'}</span></div>
+                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800"><span className="text-[10px] font-bold text-slate-400 block mb-0.5">بالصيدليات</span><span className="text-sm font-black text-slate-700 dark:text-white">{medicine.availability === 'unavailable' ? 'مقطوع' : 'غالي'}</span></div>
+                </div>
+                {medicine.description && <div className="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-3 text-right text-sm text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-800"><span className="block text-[10px] font-bold text-slate-400 mb-1">ملاحظات:</span>{medicine.description}</div>}
+             </div>
+          )}
+          
+          <div className="flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800/50 pt-3">
+              {medicine.status === 'pending' && !isMine && medicine.approved && <button onClick={() => onFulfill(medicine.id, userProfile)} className="w-full py-3 bg-brand-accent text-slate-900 rounded-xl font-bold flex items-center justify-center gap-2"><HeartHandshake size={18}/> أتعهد بتوفير هذا الدواء</button>}
+              {medicine.status === 'pending' && isMine && !medicine.approved && <div className="w-full py-3 bg-orange-50 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-xl font-bold text-center text-sm border border-orange-200 dark:border-orange-500/30">طلبك قيد المراجعة</div>}
+              {medicine.status === 'pending' && isMine && medicine.approved && <div className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl font-bold text-center text-sm border border-slate-200 dark:border-slate-700">منشور بانتظار متبرع</div>}
+              
+              {isInProgress && (isMine || (user && user.uid === medicine.fulfillerId)) && (
+                  <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-4">
+                     <p className="text-center text-xs text-indigo-700 dark:text-indigo-400 font-bold mb-4">تواصل مع الطرف الآخر للاتفاق على التسليم.</p>
+                     <div className="flex gap-2">
+                         <button onClick={() => onCancelFulfill(medicine.id)} className="flex-1 py-2 bg-white dark:bg-slate-900 text-red-500 border border-red-200 dark:border-red-500/30 rounded-xl font-bold text-xs">إلغاء ❌</button>
+                         <button onClick={() => onComplete(medicine.id)} className="flex-1 py-2 bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-md">تم التسليم ✅</button>
+                     </div>
+                  </div>
+              )}
+              {isCompleted && <div className="w-full py-3 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl font-bold text-center text-sm border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center gap-2"><CheckCircle2 size={16}/> تم التوفير بنجاح</div>}
+          </div>
+        </div>
+      );
+    }
+
+    // --- 5. Main Views (Pages) ---
 
     function HomeView({ donors = [], user, userProfile, loading, onCopyPhone, isDark, toggleTheme, setView, showNotification, notifications = [], markAsRead, deleteNotification, rejectRequest }) {
       const [filterBlood, setFilterBlood] = useState('الكل');
@@ -565,60 +462,25 @@
 
       const filtered = useMemo(() => {
         let result = (Array.isArray(donors) ? donors : []).filter(d => filterBlood === 'الكل' || d.bloodType === filterBlood);
-        result.sort((a, b) => {
-          const aActive = a.status !== 0 ? 1 : 0;
-          const bActive = b.status !== 0 ? 1 : 0;
-          return bActive - aActive; 
-        });
-        return result;
+        return result.sort((a, b) => (b.status !== 0 ? 1 : 0) - (a.status !== 0 ? 1 : 0));
       }, [donors, filterBlood]);
 
-      const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
-
       const handleRate = async (donor) => {
-         if (!user) { showNotification('error', 'يجب تسجيل الدخول للشكر/التقييم.'); setView('login'); return; }
+         if (!user) { showNotification('error', 'يجب تسجيل الدخول.'); setView('login'); return; }
          if (user.uid === donor.id) return showNotification('error', 'لا يمكنك تقييم نفسك.');
-         const safeRaters = Array.isArray(donor.raters) ? donor.raters : [];
-         const hasRated = safeRaters.includes(user.uid);
-         try {
-             await updateDoc(doc(db, DONORS_COLLECTION, donor.id), { raters: hasRated ? arrayRemove(user.uid) : arrayUnion(user.uid) });
-             showNotification('success', hasRated ? 'تم إلغاء الشكر.' : 'تم إرسال شكرك للمتبرع!');
-         } catch(e) { showNotification('error', 'فشل التحديث.'); }
+         const hasRated = (Array.isArray(donor.raters) ? donor.raters : []).includes(user.uid);
+         try { await updateDoc(doc(db, DONORS_COLLECTION, donor.id), { raters: hasRated ? arrayRemove(user.uid) : arrayUnion(user.uid) }); showNotification('success', hasRated ? 'تم إلغاء الشكر.' : 'تم الإرسال!'); } catch(e) {}
       };
 
       const submitReport = async (reason) => {
-         try {
-             await addDoc(collection(db, REPORTS_COLLECTION), { reportedDonorId: reportingDonor.id, reportedDonorName: reportingDonor.username, reporterId: user.uid, reason: reason, status: 'pending', createdAt: serverTimestamp() });
-             showNotification('success', 'تم استلام بلاغك. ستقوم الإدارة بمراجعته قريبًا.');
-             setReportingDonor(null);
-         } catch(e) { showNotification('error', 'حدث خطأ أثناء إرسال البلاغ.'); }
+         try { await addDoc(collection(db, REPORTS_COLLECTION), { reportedDonorId: reportingDonor.id, reportedDonorName: reportingDonor.username, reporterId: user.uid, reason: reason, status: 'pending', createdAt: serverTimestamp() }); showNotification('success', 'تم استلام بلاغك.'); setReportingDonor(null); } catch(e) {}
       };
 
       const handleSendRequest = (donor, onSuccessCallback) => {
-          if (!user) { showNotification('error', 'يجب تسجيل الدخول لإرسال طلب تبرع.'); setView('login'); return; }
+          if (!user) { showNotification('error', 'سجل الدخول أولاً.'); setView('login'); return; }
           if (user.uid === donor.id) return showNotification('error', 'لا يمكنك إرسال طلب لنفسك.');
-          
-          setModalConfig({
-             isOpen: true,
-             title: "تأكيد طلب التبرع",
-             message: `سيتم إرسال إشعار للمتبرع "${donor.username || 'فاعل خير'}" يتضمن رقم هاتفك (${userProfile?.phone || ''}) واسمك لكي يتواصل معك. هل أنت متأكد؟`,
-             isDestructive: false,
-             confirmText: "إرسال الطلب",
-             action: async () => {
-                 try {
-                     await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
-                         toUserId: donor.id,
-                         fromUserId: user.uid,
-                         fromUserPhone: userProfile?.phone || '',
-                         title: "طلب تبرع عاجل 🩸",
-                         body: `المستخدم ${userProfile?.username || 'مريض'} يحتاج لتبرعك. يرجى الاتصال به على الرقم ${userProfile?.phone || ''}`,
-                         type: 'request',
-                         read: false,
-                         createdAt: serverTimestamp()
-                     });
-                     showNotification('success', 'تم إرسال الإشعار بنجاح! المتبرع سيتواصل معك قريباً.');
-                     if (onSuccessCallback) onSuccessCallback();
-                 } catch(e) { showNotification('error', 'حدث خطأ في إرسال الإشعار.'); }
+          setModalConfig({ isOpen: true, title: "تأكيد الطلب", message: `سيتم إرسال إشعار للمتبرع. هل أنت متأكد؟`, isDestructive: false, confirmText: "إرسال", action: async () => {
+                 try { await addDoc(collection(db, NOTIFICATIONS_COLLECTION), { toUserId: donor.id, fromUserId: user.uid, fromUserPhone: userProfile?.phone || '', title: "طلب تبرع 🩸", body: `المستخدم ${userProfile?.username || 'مريض'} يحتاج تبرعك. هاتفه: ${userProfile?.phone || ''}`, type: 'request', read: false, createdAt: serverTimestamp() }); showNotification('success', 'تم إرسال الإشعار!'); if (onSuccessCallback) onSuccessCallback(); } catch(e) {}
              }
          });
       };
@@ -629,527 +491,241 @@
           <div className="px-6 mb-6 mt-4">
             <h2 className="text-lg font-black text-slate-800 dark:text-white mb-3">تصفية حسب الزمرة</h2>
             <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar direction-rtl" dir="rtl">
-              {['الكل', 'A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map(t=><button key={t} onClick={()=>setFilterBlood(t)} className={`flex-shrink-0 h-10 px-6 rounded-full text-sm font-bold transition-all border ${filterBlood===t?'bg-brand-accent text-slate-900 border-brand-accent shadow-[0_4px_12px_rgba(205,235,87,0.2)]':'glass-panel text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}><span dir="ltr">{t}</span></button>)}
+              {['الكل', 'A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map(t=><button key={t} onClick={()=>setFilterBlood(t)} className={`flex-shrink-0 h-10 px-6 rounded-full text-sm font-bold border ${filterBlood===t?'bg-brand-accent text-slate-900 border-brand-accent shadow-md':'glass-panel text-slate-500 hover:text-slate-800 dark:hover:text-white'}`}><span dir="ltr">{t}</span></button>)}
             </div>
           </div>
-          
           <div className="px-2 sm:px-6">
-            {loading ? (
-              <div className="py-20 flex flex-col items-center gap-4"><Loader2 className="animate-spin text-emerald-500 dark:text-brand-accent" size={40}/><p className="text-slate-500 dark:text-slate-400 font-bold text-sm">جاري جلب قائمة المتبرعين...</p></div>
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800">
-                 <Droplet size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-4 opacity-50"/>
-                 <p className="text-slate-600 dark:text-slate-300 font-bold">لا يوجد متبرعين متاحين حالياً</p>
-                 <p className="text-slate-400 dark:text-slate-500 text-sm mt-2 px-4">كن أول من يتبرع في هذه الفئة!</p>
-              </div>
-            ) : (
-              filtered.map(d => <DonorCard key={d.id} donor={d} user={user} onCopyPhone={onCopyPhone} onRate={handleRate} onReport={(d) => { if(!user) { setView('login'); showNotification('error', 'يجب تسجيل الدخول للإبلاغ.'); } else { setReportingDonor(d); } }} onSendRequest={handleSendRequest} />)
-            )}
+            {loading ? <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-emerald-500" size={40}/></div> 
+            : filtered.length === 0 ? <EmptyState icon={Droplet} title="لا يوجد متبرعين" desc="كن أول من يتبرع في هذه الفئة!" />
+            : filtered.map(d => <DonorCard key={d.id} donor={d} user={user} onCopyPhone={onCopyPhone} onRate={handleRate} onReport={(d) => { if(!user) { setView('login'); showNotification('error', 'سجل دخولك.'); } else { setReportingDonor(d); } }} onSendRequest={handleSendRequest} />)}
           </div>
           <ReportModal isOpen={!!reportingDonor} onClose={() => setReportingDonor(null)} onConfirm={submitReport} donorName={reportingDonor?.username} />
-          <CustomModal isOpen={modalConfig.isOpen} title={modalConfig.title} message={modalConfig.message} isDestructive={modalConfig.isDestructive} confirmText={modalConfig.confirmText} onCancel={closeModal} onConfirm={() => { modalConfig.action(); closeModal(); }} />
+          <CustomModal isOpen={modalConfig.isOpen} title={modalConfig.title} message={modalConfig.message} isDestructive={modalConfig.isDestructive} confirmText={modalConfig.confirmText} onCancel={() => setModalConfig({isOpen:false})} onConfirm={() => { modalConfig.action(); setModalConfig({isOpen:false}); }} />
         </div>
       );
     }
 
-    function PharmacyView({ isDark, toggleTheme, pharmacies = [], onCopyPhone, setView, notifications = [], markAsRead, deleteNotification, rejectRequest, showNotification }) {
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      const todayStr = `${yyyy}-${mm}-${dd}`;
-      const formattedDate = new Intl.DateTimeFormat('ar-DZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(today);
-
-      const onDutyPharmacies = useMemo(() => {
-        return (Array.isArray(pharmacies) ? pharmacies : []).filter(p => p.isOnDuty || (Array.isArray(p.dutyDates) && p.dutyDates.includes(todayStr)));
-      }, [pharmacies, todayStr]);
+    function PharmacyView({ isDark, toggleTheme, pharmacies = [], onCopyPhone, setView, notifications, markAsRead, deleteNotification, rejectRequest, showNotification }) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const formattedDate = new Intl.DateTimeFormat('ar-DZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
+      const onDutyPharmacies = useMemo(() => (Array.isArray(pharmacies) ? pharmacies : []).filter(p => p.isOnDuty || (Array.isArray(p.dutyDates) && p.dutyDates.includes(todayStr))), [pharmacies, todayStr]);
 
       return (
         <div className="pb-32 font-sans min-h-screen" dir="rtl">
            <AppHeader isDark={isDark} toggleTheme={toggleTheme} setView={setView} notifications={notifications} markAsRead={markAsRead} deleteNotification={deleteNotification} rejectRequest={rejectRequest} showNotification={showNotification} />
-           <div className="px-6 mb-6 mt-4 text-center">
-             <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-1">الصيدليات المناوبة</h2>
-             <p className="text-emerald-600 dark:text-brand-accent font-bold text-sm">تحديث اليوم: {formattedDate}</p>
-           </div>
-           
+           <div className="px-6 mb-6 mt-4 text-center"><h2 className="text-2xl font-black text-slate-800 dark:text-white mb-1">الصيدليات المناوبة</h2><p className="text-emerald-600 font-bold text-sm">اليوم: {formattedDate}</p></div>
            <div className="px-2 sm:px-6">
-            {onDutyPharmacies.length === 0 ? (
-              <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800">
-                 <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center opacity-70"><Stethoscope size={40} className="text-slate-300 dark:text-slate-600"/></div>
-                 <p className="text-slate-600 dark:text-slate-300 font-bold">لا توجد صيدليات مناوبة اليوم</p>
-                 <p className="text-slate-400 dark:text-slate-500 text-sm mt-2 px-4">قد تكون الإدارة لم تقم بتحديث جدول المناوبة بعد.</p>
-              </div>
-            ) : (
-              onDutyPharmacies.map(p => <PharmacyCard key={p.id} pharmacy={p} onCopyPhone={onCopyPhone}/>)
-            )}
+            {onDutyPharmacies.length === 0 ? <EmptyState icon={Stethoscope} title="لا توجد صيدليات مناوبة" desc="قد تكون الإدارة لم تقم بتحديث الجدول بعد." />
+            : onDutyPharmacies.map(p => <PharmacyCard key={p.id} pharmacy={p} onCopyPhone={onCopyPhone}/>)}
           </div>
         </div>
       );
     }
 
-    function MedicinesView({ user, userProfile, medicines = [], loading, isDark, toggleTheme, setView, showNotification, notifications = [], markAsRead, deleteNotification, rejectRequest }) {
-      const [showAddModal, setShowAddModal] = useState(false);
-      const [medName, setMedName] = useState('');
-      const [quantity, setQuantity] = useState('');
-      const [hasPrescription, setHasPrescription] = useState('yes');
-      const [paymentStatus, setPaymentStatus] = useState('charity');
-      const [availability, setAvailability] = useState('unavailable');
-      const [isUrgent, setIsUrgent] = useState(false);
-      const [medDesc, setMedDesc] = useState('');
-      const [adding, setAdding] = useState(false);
-      const [modalConfig, setModalConfig] = useState({ isOpen: false });
-
+    function MedicinesView({ user, userProfile, medicines = [], loading, isDark, toggleTheme, setView, showNotification, notifications, markAsRead, deleteNotification, rejectRequest }) {
+      const [showAddModal, setShowAddModal] = useState(false); const [medName, setMedName] = useState(''); const [quantity, setQuantity] = useState(''); const [hasPrescription, setHasPrescription] = useState('yes'); const [paymentStatus, setPaymentStatus] = useState('charity'); const [availability, setAvailability] = useState('unavailable'); const [isUrgent, setIsUrgent] = useState(false); const [medDesc, setMedDesc] = useState(''); const [adding, setAdding] = useState(false); const [modalConfig, setModalConfig] = useState({ isOpen: false });
       const visibleMedicines = (Array.isArray(medicines) ? medicines : []).filter(m => m.approved === true || (user && m.requesterId === user.uid));
-      const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
 
       const handleAddRequest = async (e) => {
-        e.preventDefault();
-        if (!user) { showNotification('error', 'يجب تسجيل الدخول أولاً لطلب دواء.'); setView('login'); return; }
-        if(String(medName || '').length < 2 || String(quantity || '').length < 1) return;
-        setAdding(true);
-        try {
-            await addDoc(collection(db, MEDICINES_COLLECTION), {
-               medicineName: medName, quantity, hasPrescription, paymentStatus, availability, isUrgent, description: medDesc, requesterId: user.uid, requesterName: userProfile?.username || 'مريض', requesterPhone: userProfile?.phone || '', status: 'pending', fulfillerId: null, approved: false, createdAt: serverTimestamp()
-            });
-            showNotification('success', 'تمت إضافة طلبك، سيظهر للعامة بعد مراجعته من الإدارة.');
-            setShowAddModal(false); 
-            setMedName(''); setQuantity(''); setHasPrescription('yes'); setPaymentStatus('charity'); setAvailability('unavailable'); setIsUrgent(false); setMedDesc('');
-        } catch(err) { showNotification('error', 'حدث خطأ أثناء الإضافة.'); } finally { setAdding(false); }
+        e.preventDefault(); if (!user) { setView('login'); return; } if(medName.length < 2) return; setAdding(true);
+        try { await addDoc(collection(db, MEDICINES_COLLECTION), { medicineName: medName, quantity, hasPrescription, paymentStatus, availability, isUrgent, description: medDesc, requesterId: user.uid, requesterName: userProfile?.username || 'مريض', requesterPhone: userProfile?.phone || '', status: 'pending', fulfillerId: null, approved: false, createdAt: serverTimestamp() }); showNotification('success', 'تمت الإضافة بنجاح.'); setShowAddModal(false); setMedName(''); } catch(err) {} finally { setAdding(false); }
       };
 
-      const handleFulfill = (id, currentUserProfile) => {
-         if (!user) { showNotification('error', 'يجب تسجيل الدخول للتكفل بالدواء.'); setView('login'); return; }
-         setModalConfig({
-             isOpen: true,
-             title: "تأكيد التكفل بالدواء",
-             message: "هل أنت متأكد أنك تستطيع توفير هذا الدواء وسوف تتواصل مع المريض لتسليمه؟",
-             isDestructive: false,
-             confirmText: "نعم، أتعهد بذلك",
-             action: async () => {
-                 try { 
-                     await updateDoc(doc(db, MEDICINES_COLLECTION, id), { status: 'in_progress', fulfillerId: user.uid, fulfillerName: currentUserProfile?.username || 'فاعل خير', fulfillerPhone: currentUserProfile?.phone || '' }); 
-                     showNotification('success', 'جزاك الله خيراً! تواصل مع المريض الآن.'); 
-                 } catch(e) { showNotification('error', 'حدث خطأ.'); }
-             }
-         });
-      };
-
-      const handleCancelFulfill = (id) => {
-         setModalConfig({
-             isOpen: true,
-             title: "إلغاء التكفل",
-             message: "هل أنت متأكد من إلغاء العملية؟ سيعود الطلب للظهور للعامة بانتظار متبرع آخر.",
-             isDestructive: true,
-             confirmText: "نعم، إلغاء",
-             action: async () => {
-                 try { 
-                     await updateDoc(doc(db, MEDICINES_COLLECTION, id), { status: 'pending', fulfillerId: null, fulfillerName: null, fulfillerPhone: null }); 
-                     showNotification('success', 'تم إلغاء التكفل.'); 
-                 } catch(e) { showNotification('error', 'حدث خطأ.'); }
-             }
-         });
-      };
-
-      const handleComplete = (id) => {
-         setModalConfig({
-             isOpen: true,
-             title: "تأكيد التسليم",
-             message: "هل تم تسليم الدواء بنجاح واستلامه من قبل المريض؟",
-             isDestructive: false,
-             confirmText: "نعم، تم التسليم ✅",
-             action: async () => {
-                 try { await updateDoc(doc(db, MEDICINES_COLLECTION, id), { status: 'completed' }); showNotification('success', 'الحمد لله! تم إغلاق الطلب بنجاح.'); } 
-                 catch(e) { showNotification('error', 'حدث خطأ.'); }
-             }
-         });
-      };
-
-      const handleDelete = (id) => {
-         setModalConfig({
-             isOpen: true,
-             title: "حذف الطلب",
-             message: "هل أنت متأكد من حذف هذا الطلب نهائياً من التطبيق؟",
-             isDestructive: true,
-             confirmText: "حذف نهائي",
-             action: async () => {
-                 try { await deleteDoc(doc(db, MEDICINES_COLLECTION, id)); showNotification('success', 'تم حذف الطلب.'); } catch(e) {}
-             }
-         });
-      };
+      const handleFulfill = (id) => setModalConfig({ isOpen: true, title: "تأكيد التكفل", message: "تستطيع توفير الدواء؟", isDestructive: false, confirmText: "نعم", action: async () => { try { await updateDoc(doc(db, MEDICINES_COLLECTION, id), { status: 'in_progress', fulfillerId: user.uid, fulfillerName: userProfile?.username, fulfillerPhone: userProfile?.phone }); showNotification('success', 'تواصل مع المريض.'); } catch(e) {} } });
+      const handleCancelFulfill = (id) => setModalConfig({ isOpen: true, title: "إلغاء التكفل", message: "متأكد من الإلغاء؟", isDestructive: true, confirmText: "إلغاء", action: async () => { try { await updateDoc(doc(db, MEDICINES_COLLECTION, id), { status: 'pending', fulfillerId: null, fulfillerName: null, fulfillerPhone: null }); showNotification('success', 'تم الإلغاء.'); } catch(e) {} } });
+      const handleComplete = (id) => setModalConfig({ isOpen: true, title: "تأكيد التسليم", message: "تم التسليم بنجاح؟", isDestructive: false, confirmText: "تم ✅", action: async () => { try { await updateDoc(doc(db, MEDICINES_COLLECTION, id), { status: 'completed' }); showNotification('success', 'الحمد لله.'); } catch(e) {} } });
+      const handleDelete = (id) => setModalConfig({ isOpen: true, title: "حذف الطلب", message: "متأكد من الحذف؟", isDestructive: true, confirmText: "حذف", action: async () => { try { await deleteDoc(doc(db, MEDICINES_COLLECTION, id)); showNotification('success', 'تم الحذف.'); } catch(e) {} } });
 
       return (
         <div className="pb-32 font-sans min-h-screen relative" dir="rtl">
            <AppHeader isDark={isDark} toggleTheme={toggleTheme} setView={setView} notifications={notifications} markAsRead={markAsRead} deleteNotification={deleteNotification} rejectRequest={rejectRequest} showNotification={showNotification} />
            <div className="px-6 mb-6 flex justify-between items-end mt-4">
-              <div><h2 className="text-2xl font-black text-slate-800 dark:text-white mb-1">الأدوية المفقودة</h2><p className="text-slate-500 dark:text-slate-400 text-sm">منصة لطلب وتوفير الأدوية بين السكان</p></div>
-              <button onClick={() => { if(!user) { setView('login'); showNotification('error', 'سجل دخولك لطلب دواء'); } else setShowAddModal(true); }} className="w-12 h-12 bg-brand-accent text-slate-900 rounded-2xl flex items-center justify-center shadow-[0_4px_15px_rgba(205,235,87,0.2)] hover:scale-105 active:scale-95 transition-all shrink-0"><Plus strokeWidth={3} size={24}/></button>
+              <div><h2 className="text-2xl font-black text-slate-800 dark:text-white mb-1">الأدوية المفقودة</h2><p className="text-slate-500 text-sm">منصة لتوفير الأدوية</p></div>
+              <button onClick={() => { if(!user) { setView('login'); showNotification('error', 'سجل دخولك'); } else setShowAddModal(true); }} className="w-12 h-12 bg-brand-accent text-slate-900 rounded-2xl flex items-center justify-center shadow-[0_4px_15px_rgba(205,235,87,0.2)] hover:scale-105 active:scale-95 transition-all shrink-0"><Plus strokeWidth={3} size={24}/></button>
            </div>
-           
            <div className="px-2 sm:px-6 mt-6">
-            {loading ? (
-              <div className="py-20 flex flex-col items-center gap-4"><Loader2 className="animate-spin text-emerald-500 dark:text-brand-accent" size={40}/><p className="text-slate-500 dark:text-slate-400 font-bold text-sm">جاري جلب الطلبات...</p></div>
-            ) : visibleMedicines.length === 0 ? (
-              <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800">
-                 <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center opacity-70"><Pill size={40} className="text-slate-300 dark:text-slate-600"/></div>
-                 <p className="text-slate-600 dark:text-slate-300 font-bold">لا توجد طلبات أدوية حالياً</p>
-                 <p className="text-slate-400 dark:text-slate-500 text-sm mt-2 px-4">الحمد لله. يمكنك الضغط على (+) لإضافة طلب إذا احتجت لدواء غير متوفر.</p>
-              </div>
-            ) : (
-              visibleMedicines.map(m => <MedicineCard key={m.id} medicine={m} user={user} userProfile={userProfile} onFulfill={handleFulfill} onCancelFulfill={handleCancelFulfill} onComplete={handleComplete} onDelete={handleDelete} showNotification={showNotification} />)
-            )}
+            {loading ? <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-emerald-500" size={40}/></div> 
+            : visibleMedicines.length === 0 ? <EmptyState icon={Pill} title="لا توجد طلبات" desc="الحمد لله. اضغط (+) للطلب." />
+            : visibleMedicines.map(m => <MedicineCard key={m.id} medicine={m} user={user} userProfile={userProfile} onFulfill={handleFulfill} onCancelFulfill={handleCancelFulfill} onComplete={handleComplete} onDelete={handleDelete} showNotification={showNotification} />)}
           </div>
-          
           {showAddModal && (
-             <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm animate-fadeIn p-0 sm:p-4">
-               <div className="glass-panel w-full sm:max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl relative border-t sm:border border-slate-200 dark:border-slate-700 animate-[translateY_0.3s_ease-out] max-h-[90vh] overflow-y-auto no-scrollbar">
-                  <button onClick={() => setShowAddModal(false)} className="absolute top-6 left-6 p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition z-10"><X size={20}/></button>
-                  <h2 className="text-2xl font-black text-emerald-600 dark:text-brand-accent mb-1 text-right mt-2">استمارة طلب دواء</h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 text-right">يرجى ملء التفاصيل بدقة لمساعدتك بأسرع وقت.</p>
-                  
-                  <form onSubmit={handleAddRequest} className="space-y-4">
-                     <div className="grid grid-cols-3 gap-3">
-                        <div className="col-span-2">
-                           <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 text-right">اسم الدواء والجرعة *</label>
-                           <input type="text" placeholder="مثال: Paracetamol 500mg" className="custom-input w-full h-12 px-4 rounded-xl text-right outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all font-bold text-sm" value={medName} onChange={e => setMedName(e.target.value)} required />
-                        </div>
-                        <div>
-                           <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 text-right">الكمية *</label>
-                           <input type="text" placeholder="مثال: علبة" className="custom-input w-full h-12 px-4 rounded-xl text-right outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all font-bold text-sm" value={quantity} onChange={e => setQuantity(e.target.value)} required />
-                        </div>
-                     </div>
-                     <div>
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 text-right">هل لديك وصفة طبية؟ *</label>
-                        <select className="custom-input custom-select w-full h-12 px-4 rounded-xl text-right outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all font-bold text-sm" value={hasPrescription} onChange={e => setHasPrescription(e.target.value)}><option value="yes">نعم، لدي وصفة طبية</option><option value="no">لا توجد وصفة</option></select>
-                     </div>
-                     <div>
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 text-right">هل تستطيع دفع ثمنه؟ *</label>
-                        <select className="custom-input custom-select w-full h-12 px-4 rounded-xl text-right outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all font-bold text-sm" value={paymentStatus} onChange={e => setPaymentStatus(e.target.value)}><option value="buy">نعم، سأدفع ثمنه</option><option value="charity">أحتاجه كصدقة (عاجز عن الدفع)</option></select>
-                     </div>
-                     <div>
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 text-right">هل بحثت عنه في الصيدليات؟ *</label>
-                        <select className="custom-input custom-select w-full h-12 px-4 rounded-xl text-right outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all font-bold text-sm" value={availability} onChange={e => setAvailability(e.target.value)}><option value="unavailable">غير متوفر (مقطوع)</option><option value="available">متوفر لكن ثمنه غالي</option></select>
-                     </div>
-                     <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 p-3 rounded-xl">
-                        <label className="flex items-center gap-3 cursor-pointer">
-                           <input type="checkbox" className="w-5 h-5 accent-red-500 rounded cursor-pointer" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
-                           <span className="font-bold text-red-600 dark:text-red-400 text-sm">هذا الدواء لحالة مستعجلة جداً 🚨</span>
-                        </label>
-                     </div>
-                     <div>
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 text-right">ملاحظات إضافية (اختياري)</label>
-                        <textarea placeholder="اكتب أي تفاصيل أخرى..." className="custom-input w-full h-20 p-4 rounded-xl text-right outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all resize-none text-sm" value={medDesc} onChange={e => setMedDesc(e.target.value)}></textarea>
-                     </div>
-                     <button type="submit" disabled={adding} className="w-full h-14 bg-emerald-500 dark:bg-brand-accent text-white dark:text-slate-900 rounded-2xl font-black shadow-lg mt-4 flex items-center justify-center gap-2 hover:bg-emerald-600 dark:hover:bg-brand-accentHover transition-all disabled:opacity-70">
-                        {adding ? <Loader2 className="animate-spin"/> : 'إرسال الطلب للإدارة'}
-                     </button>
+             <BaseModal isOpen={showAddModal} onClose={() => setShowAddModal(false)}>
+                  <h2 className="text-2xl font-black text-emerald-600 mb-1">استمارة طلب دواء</h2>
+                  <form onSubmit={handleAddRequest} className="space-y-4 mt-6">
+                     <input type="text" placeholder="اسم الدواء *" className="custom-input w-full h-12 px-4 rounded-xl text-right" value={medName} onChange={e => setMedName(e.target.value)} required />
+                     <input type="text" placeholder="الكمية *" className="custom-input w-full h-12 px-4 rounded-xl text-right" value={quantity} onChange={e => setQuantity(e.target.value)} required />
+                     <button type="submit" disabled={adding} className="w-full h-12 bg-emerald-500 text-white rounded-xl font-black flex justify-center items-center">{adding ? <Loader2 className="animate-spin"/> : 'إرسال للإدارة'}</button>
                   </form>
-               </div>
-             </div>
+             </BaseModal>
           )}
-          <CustomModal isOpen={modalConfig.isOpen} title={modalConfig.title} message={modalConfig.message} isDestructive={modalConfig.isDestructive} confirmText={modalConfig.confirmText} onCancel={closeModal} onConfirm={() => { modalConfig.action(); closeModal(); }} />
+          <CustomModal isOpen={modalConfig.isOpen} title={modalConfig.title} message={modalConfig.message} isDestructive={modalConfig.isDestructive} confirmText={modalConfig.confirmText} onCancel={()=>setModalConfig({isOpen:false})} onConfirm={()=>{modalConfig.action();setModalConfig({isOpen:false});}} />
         </div>
       )
     }
 
-    function DoctorsView({ isDark, toggleTheme, setView, notifications = [], markAsRead, deleteNotification, rejectRequest, showNotification }) {
+    function DoctorsView({ isDark, toggleTheme, setView, notifications, markAsRead, deleteNotification, rejectRequest, showNotification }) {
       return (
         <div className="pb-32 font-sans min-h-screen" dir="rtl">
            <AppHeader isDark={isDark} toggleTheme={toggleTheme} setView={setView} notifications={notifications} markAsRead={markAsRead} deleteNotification={deleteNotification} rejectRequest={rejectRequest} showNotification={showNotification}/>
-           <div className="px-6 mb-6 mt-4 text-center">
-             <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-1">دليل الأطباء</h2>
-             <p className="text-emerald-600 dark:text-brand-accent font-bold text-sm">أطباء وعيادات المنطقة</p>
-           </div>
-           <div className="px-2 sm:px-6">
-              <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800">
-                 <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center opacity-70">
-                    <HeartPulse size={40} className="text-slate-300 dark:text-slate-600"/>
-                 </div>
-                 <p className="text-slate-600 dark:text-slate-300 font-bold">قريباً إن شاء الله</p>
-                 <p className="text-slate-400 dark:text-slate-500 text-sm mt-2 px-4 leading-relaxed">سيتم توفير دليل شامل بأرقام وعناوين الأطباء في المنطقة لتسهيل التواصل معهم وتحديد المواعيد.</p>
-              </div>
-           </div>
+           <div className="px-6 mb-6 mt-4 text-center"><h2 className="text-2xl font-black text-slate-800 dark:text-white mb-1">دليل الأطباء</h2></div>
+           <div className="px-2 sm:px-6"><EmptyState icon={HeartPulse} title="قريباً إن شاء الله" desc="سيتم توفير دليل شامل لأطباء المنطقة." /></div>
         </div>
       );
     }
 
     function LoginView({ setView, showNotification }) {
-      const [email, setEmail] = useState('');
-      const [password, setPassword] = useState('');
-      const [showPassword, setShowPassword] = useState(false);
-      const [loading, setLoading] = useState(false);
-      const [showForgotModal, setShowForgotModal] = useState(false);
-
+      const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [loading, setLoading] = useState(false); const [showForgot, setShowForgot] = useState(false);
       const handleLogin = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-          await signInWithEmailAndPassword(auth, email.trim(), password);
-          showNotification('success', 'تم الدخول بنجاح');
-          setView('profile'); 
-        } catch (error) { 
-          if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') { showNotification('error', 'البريد أو كلمة المرور غير صحيحة.'); } 
-          else { showNotification('error', 'حدث خطأ في الاتصال، يرجى المحاولة مجدداً.'); }
-          setLoading(false); 
-        }
+        e.preventDefault(); setLoading(true);
+        try { await signInWithEmailAndPassword(auth, email.trim(), password); showNotification('success', 'تم الدخول بنجاح'); setView('profile'); } 
+        catch (err) { showNotification('error', 'البيانات غير صحيحة.'); setLoading(false); }
       };
-
       return (
         <div className="min-h-screen flex flex-col justify-center items-center p-6 animate-fadeIn relative">
-          <button onClick={() => setView('home')} className="absolute top-6 left-6 p-3 glass-panel text-slate-500 dark:text-slate-400 rounded-full shadow-sm hover:text-emerald-500 dark:hover:text-brand-accent transition flex items-center gap-2 font-bold text-sm z-10"><ArrowRight size={18}/> رجوع</button>
+          <button onClick={() => setView('home')} className="absolute top-6 left-6 p-3 glass-panel text-slate-500 rounded-full flex items-center gap-2 font-bold text-sm"><ArrowRight size={18}/> رجوع</button>
           <div className="w-full max-w-md">
-            <div className="flex justify-center mb-8">
-              <div className="w-20 h-20 glass-panel rounded-[1.5rem] flex items-center justify-center shadow-lg relative border-slate-100 dark:border-slate-800"><Droplet size={40} className="text-emerald-500 dark:text-brand-accent" fill="currentColor" /><div className="absolute top-0 right-0 bg-white dark:bg-slate-900 rounded-full p-1 border border-slate-100 dark:border-slate-700"><Plus size={12} className="text-emerald-500 dark:text-brand-accent" /></div></div>
-            </div>
-            <h2 className="text-3xl font-black text-slate-800 dark:text-white text-center mb-2">مرحباً بعودتك!</h2>
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div className="relative"><input type="email" placeholder="البريد الإلكتروني" className="custom-input w-full h-14 px-4 rounded-full text-right pr-4 pl-12 outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all" value={email} onChange={e => setEmail(e.target.value)} required /><div className="absolute left-4 top-4 text-slate-400 dark:text-slate-500"><Mail size={22}/></div></div>
-              <div className="relative"><input type={showPassword ? "text" : "password"} placeholder="كلمة المرور" className="custom-input w-full h-14 px-4 rounded-full text-right pr-4 pl-12 outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all" value={password} onChange={e => setPassword(e.target.value)} required /><div className="absolute left-4 top-4 text-slate-400 dark:text-slate-500 cursor-pointer hover:text-emerald-500 dark:hover:text-brand-accent transition-colors" onClick={() => setShowPassword(!showPassword)}>{showPassword?<EyeOff size={20}/>:<Eye size={20}/>}</div></div>
-              <div className="flex justify-end"><button type="button" onClick={() => setShowForgotModal(true)} className="text-sm font-bold text-emerald-600 dark:text-brand-accent hover:underline">نسيت كلمة المرور؟</button></div>
-              <button type="submit" disabled={loading} className="w-full h-14 bg-brand-accent hover:bg-brand-accentHover text-slate-900 rounded-full font-black text-lg shadow-[0_4px_20px_rgba(205,235,87,0.1)] transition-all mt-4 flex items-center justify-center transform active:scale-95">{loading ? <Loader2 className="animate-spin text-slate-900"/> : 'تسجيل الدخول'}</button>
+            <div className="flex justify-center mb-8"><div className="w-20 h-20 glass-panel rounded-[1.5rem] flex items-center justify-center"><Droplet size={40} className="text-emerald-500" fill="currentColor" /></div></div>
+            <h2 className="text-3xl font-black text-slate-800 dark:text-white text-center mb-6">مرحباً بعودتك!</h2>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <input type="email" placeholder="البريد الإلكتروني" className="custom-input w-full h-14 px-4 rounded-full text-center" onChange={e => setEmail(e.target.value)} required />
+              <input type="password" placeholder="كلمة المرور" className="custom-input w-full h-14 px-4 rounded-full text-center" onChange={e => setPassword(e.target.value)} required />
+              <button type="button" onClick={() => setShowForgot(true)} className="w-full text-sm font-bold text-emerald-600 mt-2">نسيت كلمة المرور؟</button>
+              <button type="submit" disabled={loading} className="w-full h-14 bg-brand-accent text-slate-900 rounded-full font-black text-lg mt-4 flex items-center justify-center">{loading ? <Loader2 className="animate-spin text-slate-900"/> : 'تسجيل الدخول'}</button>
             </form>
-            <div className="mt-8 text-center"><button onClick={() => setView('register')} className="text-slate-500 dark:text-slate-400 font-bold hover:text-slate-800 dark:hover:text-white transition-colors">ليس لديك حساب؟ <span className="text-emerald-600 dark:text-brand-accent">إنشاء حساب</span></button></div>
+            <div className="mt-8 text-center"><button onClick={() => setView('register')} className="text-slate-500 font-bold">ليس لديك حساب؟ <span className="text-emerald-600">إنشاء حساب</span></button></div>
           </div>
-          <ForgotPasswordModal isOpen={showForgotModal} onClose={() => setShowForgotModal(false)} showNotification={showNotification} />
+          <ForgotPasswordModal isOpen={showForgot} onClose={() => setShowForgot(false)} showNotification={showNotification} />
         </div>
       );
     }
 
     function RegisterView({ setView, showNotification }) {
       const [formData, setFormData] = useState({ username: '', email: '', password: '', phone: '', neighborhood: '', municipality: 'الأمير عبد القادر', bloodType: 'A+' });
-      const [loading, setLoading] = useState(false);
+      const [isPhoneHidden, setIsPhoneHidden] = useState(false); const [acceptTerms, setAcceptTerms] = useState(false); const [showTerms, setShowTerms] = useState(false); const [loading, setLoading] = useState(false);
 
       const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (formData.phone.length < 10) return showNotification('error', 'رقم الهاتف قصير جداً');
-        setLoading(true);
-        try {
-          const cred = await createUserWithEmailAndPassword(auth, formData.email.trim(), formData.password);
-          await setDoc(doc(db, DONORS_COLLECTION, cred.user.uid), { uid: cred.user.uid, ...formData, status: 1, raters: [], isPhoneHidden: false, createdAt: serverTimestamp(), lastDonationDate: null });
-          showNotification('success', 'تم إنشاء الحساب بنجاح!');
-          setView('profile');
-        } catch (error) {
-          let msg = 'فشل التسجيل. تأكد من البيانات.';
-          if (error.code === 'auth/email-already-in-use') msg = 'البريد مستخدم بالفعل.';
-          else if (error.code === 'auth/weak-password') msg = 'كلمة المرور ضعيفة.';
-          showNotification('error', msg); setLoading(false);
-        }
+        e.preventDefault(); if (!acceptTerms) return showNotification('error', 'يجب الموافقة على الشروط أولاً.'); if (formData.phone.length < 10) return showNotification('error', 'رقم الهاتف قصير جداً'); setLoading(true);
+        try { const cred = await createUserWithEmailAndPassword(auth, formData.email.trim(), formData.password); await setDoc(doc(db, DONORS_COLLECTION, cred.user.uid), { uid: cred.user.uid, ...formData, status: 1, raters: [], isPhoneHidden: isPhoneHidden, createdAt: serverTimestamp(), lastDonationDate: null }); showNotification('success', 'تم إنشاء الحساب!'); setView('profile'); } 
+        catch (err) { showNotification('error', 'فشل التسجيل. تأكد من البيانات.'); setLoading(false); }
       };
 
       return (
-        <div className="min-h-screen p-6 flex flex-col justify-center font-sans pb-24" dir="rtl">
-           <div className="glass-panel rounded-[2.5rem] p-8 shadow-2xl relative">
-              <button onClick={() => setView('home')} className="absolute top-6 left-6 text-slate-400 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-brand-accent font-bold flex items-center gap-1 text-sm"><ArrowRight size={16}/> إغلاق</button>
-              <h2 className="text-2xl font-black text-emerald-600 dark:text-brand-accent mb-6 text-center mt-4">انضم للمتبرعين</h2>
+        <div className="min-h-screen p-4 sm:p-6 flex flex-col justify-center font-sans pb-24" dir="rtl">
+           <div className="glass-panel rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative max-w-md mx-auto w-full">
+              <button onClick={() => setView('home')} className="absolute top-6 left-6 text-slate-400 font-bold flex items-center gap-1 text-sm hover:text-emerald-500"><ArrowRight size={16}/> إغلاق</button>
+              <h2 className="text-2xl font-black text-emerald-600 mb-6 text-center mt-4">انضم للمتبرعين</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
-                 <input placeholder="الاسم المستعار (يظهر للناس)" className="custom-input h-12 rounded-xl px-4 outline-none w-full text-right focus:border-emerald-500 dark:focus:border-brand-accent transition-colors" onChange={e => setFormData({...formData, username: e.target.value})} required/>
-                 <div className="grid grid-cols-2 gap-3"><input value="الأمير عبد القادر" disabled className="custom-input h-12 rounded-xl px-4 outline-none text-right opacity-70 cursor-not-allowed bg-slate-100 dark:bg-slate-900/50" /><input placeholder="الحي / الدوار" className="custom-input h-12 rounded-xl px-4 outline-none text-right focus:border-emerald-500 dark:focus:border-brand-accent transition-colors" onChange={e => setFormData({...formData, neighborhood: e.target.value})} required/></div>
-                 <input type="email" placeholder="البريد الإلكتروني" className="custom-input h-12 rounded-xl px-4 outline-none w-full text-right focus:border-emerald-500 dark:focus:border-brand-accent transition-colors" onChange={e => setFormData({...formData, email: e.target.value})} required/>
-                 <input type="password" placeholder="كلمة المرور (6+ حروف)" minLength={6} className="custom-input h-12 rounded-xl px-4 outline-none w-full text-right focus:border-emerald-500 dark:focus:border-brand-accent transition-colors" onChange={e => setFormData({...formData, password: e.target.value})} required/>
-                 <div className="grid grid-cols-2 gap-3"><input type="tel" placeholder="رقم الهاتف" className="custom-input h-12 rounded-xl px-4 outline-none text-right focus:border-emerald-500 dark:focus:border-brand-accent transition-colors" onChange={e => setFormData({...formData, phone: e.target.value})} dir="ltr" required/><select className="custom-input custom-select h-12 rounded-xl px-4 outline-none text-right focus:border-emerald-500 dark:focus:border-brand-accent transition-colors" onChange={e => setFormData({...formData, bloodType: e.target.value})}>{['A+', 'O+', 'B+', 'AB+', 'A-', 'O-', 'B-', 'AB-'].map(t=><option key={t} value={t}>{t}</option>)}</select></div>
-                 <button type="submit" disabled={loading} className="w-full h-14 bg-brand-accent text-slate-900 rounded-2xl font-black shadow-lg mt-6 flex items-center justify-center gap-2 hover:bg-brand-accentHover transition-all">{loading ? <Loader2 className="animate-spin text-slate-900"/> : 'تسجيل وانضمام'}</button>
+                 <input placeholder="الاسم المستعار (سيظهر للجميع)" className="custom-input h-12 rounded-xl px-4 w-full" onChange={e => setFormData({...formData, username: e.target.value})} required/>
+                 <div className="grid grid-cols-2 gap-3"><input value="بلدية الأمير عبد القادر" disabled className="custom-input h-12 rounded-xl px-4 opacity-70 cursor-not-allowed bg-slate-100 dark:bg-slate-900/50 text-xs sm:text-sm font-bold" /><input placeholder="الحي / الدوار" className="custom-input h-12 rounded-xl px-4 w-full" onChange={e => setFormData({...formData, neighborhood: e.target.value})} required/></div>
+                 <input type="email" placeholder="البريد الإلكتروني" className="custom-input h-12 rounded-xl px-4 w-full" onChange={e => setFormData({...formData, email: e.target.value})} required/>
+                 <input type="password" placeholder="كلمة المرور (+6 حروف)" minLength={6} className="custom-input h-12 rounded-xl px-4 w-full" onChange={e => setFormData({...formData, password: e.target.value})} required/>
+                 <div className="flex gap-2"><input type="tel" placeholder="رقم الهاتف" className="custom-input h-12 rounded-xl px-4 flex-1 text-right" onChange={e => setFormData({...formData, phone: e.target.value})} dir="ltr" required/><button type="button" onClick={() => setIsPhoneHidden(!isPhoneHidden)} className={`h-12 px-4 rounded-xl flex items-center justify-center border ${isPhoneHidden ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-500/20' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800'}`} title={isPhoneHidden ? 'الرقم مخفي' : 'الرقم ظاهر'}>{isPhoneHidden ? <EyeOffIcon size={20}/> : <Eye size={20}/>}</button></div>
+                 <select className="custom-input custom-select h-12 rounded-xl px-4 w-full text-center font-bold text-lg" onChange={e => setFormData({...formData, bloodType: e.target.value})}>{['A+', 'O+', 'B+', 'AB+', 'A-', 'O-', 'B-', 'AB-'].map(t=><option key={t} value={t}>{t}</option>)}</select>
+                 <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 mt-4"><input type="checkbox" id="tos" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-emerald-500 rounded cursor-pointer shrink-0" /><label htmlFor="tos" className="text-xs font-bold text-slate-600 dark:text-slate-300">أوافق على <button type="button" onClick={() => setShowTerms(true)} className="text-emerald-600 underline">شروط الاستخدام وإخلاء المسؤولية</button></label></div>
+                 <button type="submit" disabled={loading || !acceptTerms} className="w-full h-14 bg-brand-accent text-slate-900 rounded-2xl font-black shadow-lg mt-6 flex justify-center items-center disabled:opacity-50">{loading ? <Loader2 className="animate-spin"/> : 'تسجيل وانضمام'}</button>
               </form>
            </div>
+           <BaseModal isOpen={showTerms} onClose={() => setShowTerms(false)}><h2 className="text-xl font-black text-emerald-600 mb-4">شروط الاستخدام وإخلاء المسؤولية</h2><div className="text-xs text-slate-600 dark:text-slate-300 space-y-3 text-right leading-relaxed pr-2"><h3 className="font-bold text-slate-800 dark:text-white">1. طبيعة الخدمة:</h3><p>هذا التطبيق هو منصة تقنية تهدف للربط الإنساني والتطوعي بين المتبرعين بالدم والمحتاجين إليه. التطبيق ليس جهة طبية ولا يقوم بجمع الدم أو تخزينه، ولا يغني عن الإجراءات الرسمية المتبعة في مراكز حقن الدم والمستشفيات التابعة لوزارة الصحة.</p><h3 className="font-bold text-slate-800 dark:text-white mt-4">2. حماية المعطيات الشخصية:</h3><p>التزاماً بالقانون 18-07 المتعلق بحماية المعطيات الشخصية، نؤكد أن البيانات المدخلة (رقم الهاتف، الفصيلة) تُستخدم حصراً لغرض التنسيق للتبرع.</p><p>للمستخدم الحق الكامل في استخدام اسم مستعار، كما يملك الحق في إخفاء رقم هاتفه أو حذف حسابه نهائياً في أي وقت، وهو ما سيؤدي لمسح بياناته من قاعدة بياناتنا فوراً.</p><h3 className="font-bold text-slate-800 dark:text-white mt-4">3. إخلاء المسؤولية:</h3><ul className="list-disc pr-4 space-y-1"><li>المطور غير مسؤول عن دقة البيانات التي يضعها المستخدمون (مثل فصيلة الدم)، ويجب على الجهة الطبية المستقبلة للمتبرع إجراء التحاليل اللازمة للتأكد.</li><li>المطور غير مسؤول عن أي سوء استخدام لبيانات التواصل (رقم الهاتف) خارج إطار هذا التطبيق.</li><li>يُمنع منعاً باتاً طلب أي مقابل مادي مقابل التبرع، والتطبيق مخصص للعمل التطوعي المجاني فقط. أي بلاغ عن محاولة بيع أو شراء دم سيؤدي لحظر الحساب نهائياً والتبليغ عنه لدى السلطات المعنية.</li></ul><h3 className="font-bold text-slate-800 dark:text-white mt-4">4. الموافقة:</h3><p>بقيامك بالتسجيل في التطبيق، أنت تقر بقرائتك لهذه الشروط وتوافق على مشاركة فصيلة دمك ومعلومات التواصل الخاصة بك مع المستخدمين الآخرين لغرض التبرع.</p></div><button onClick={() => { setAcceptTerms(true); setShowTerms(false); }} className="w-full mt-6 h-12 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition">موافق</button></BaseModal>
         </div>
       );
     }
 
-    function ProfileView({ user, donorData, showNotification, isDark, toggleTheme, setView, notifications = [], markAsRead, deleteNotification, rejectRequest }) {
-      const [loading, setLoading] = useState(false);
-      const [isEditingPhone, setIsEditingPhone] = useState(false);
-      const [newPhone, setNewPhone] = useState('');
-      const [isEditingUsername, setIsEditingUsername] = useState(false);
-      const [newUsername, setNewUsername] = useState('');
-      const [isEditingNeighborhood, setIsEditingNeighborhood] = useState(false);
-      const [newNeighborhood, setNewNeighborhood] = useState('');
-      const [modalConfig, setModalConfig] = useState({ isOpen: false });
-
-      useEffect(() => {
-          if (donorData) {
-              setNewPhone(donorData.phone || '');
-              setNewUsername(donorData.username || '');
-              setNewNeighborhood(donorData.neighborhood || '');
-          }
-      }, [donorData]);
-
-      const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
-      const handleLogout = () => setModalConfig({ isOpen: true, title: "تسجيل الخروج", message: "هل متأكد من تسجيل الخروج؟", isDestructive: true, confirmText: "خروج", action: async () => { await signOut(auth); window.location.reload(); } });
-      const handleDeleteAccount = () => setModalConfig({ isOpen: true, title: "حذف الحساب نهائياً", message: "لن تتمكن من استعادة بياناتك.", isDestructive: true, confirmText: "حذف نهائي", action: async () => { setLoading(true); try { await deleteDoc(doc(db, DONORS_COLLECTION, user.uid)); await deleteUser(user); window.location.reload(); } catch (error) { alert("سجل الدخول مجدداً أولاً."); setLoading(false); } } });
+    function ProfileView({ user, donorData, showNotification, isDark, toggleTheme, setView, notifications, markAsRead, deleteNotification, rejectRequest }) {
+      const [loading, setLoading] = useState(false); const [modalConfig, setModalConfig] = useState({ isOpen: false });
       
-      const handleUpdateField = async (field, value, setIsEditing) => {
-        if(!value || String(value).length < 3) return showNotification('error', "قيمة قصيرة جداً");
-        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { [field]: value }, { merge: true }); showNotification('success', 'تم التحديث'); setIsEditing(false); } catch(e) { showNotification('error', "فشل التحديث"); } finally { setLoading(false); }
-      };
+      const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
+      const handleLogout = () => setModalConfig({ isOpen: true, title: "خروج", message: "متأكد؟", isDestructive: true, confirmText: "خروج", action: async () => { await signOut(auth); window.location.reload(); } });
+      
+      if (!donorData) return <div className="min-h-screen flex justify-center items-center"><Loader2 className="animate-spin text-emerald-500" size={40}/></div>;
 
-      if (!donorData) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-emerald-500 dark:text-brand-accent" size={40}/></div>;
-
-      let isEligibleToDonate = true; let daysRemaining = 0; let nextDonationDate = null;
+      const isAvailable = donorData.status !== 0;
+      let isEligibleToDonate = true; let daysRemaining = 0;
 
       if (donorData.lastDonationDate) {
-        const lastDate = typeof donorData.lastDonationDate?.toDate === 'function' ? donorData.lastDonationDate.toDate() : new Date();
-        nextDonationDate = new Date(lastDate.getTime() + (COOLDOWN_DAYS * 24 * 60 * 60 * 1000));
+        const nextDonationDate = new Date(donorData.lastDonationDate.toDate().getTime() + (COOLDOWN_DAYS * 24 * 60 * 60 * 1000));
         if (new Date() < nextDonationDate) { isEligibleToDonate = false; daysRemaining = Math.ceil(Math.abs(nextDonationDate - new Date()) / (1000 * 60 * 60 * 24)); }
       }
 
       const toggleStatus = async () => {
-        if (!isEligibleToDonate) return showNotification('error', `لا يمكنك التبرع، متبقي ${daysRemaining} يوماً.`);
-        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { status: donorData.status !== 0 ? 0 : 1 }, { merge: true }); showNotification('success', donorData.status !== 0 ? 'أنت الآن مخفي ⛔' : 'أنت الآن متاح ✅'); } catch (e) { showNotification('error', "خطأ!"); } finally { setLoading(false); }
+        if (!isEligibleToDonate) return showNotification('error', `متبقي ${daysRemaining} يوماً.`);
+        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { status: donorData.status !== 0 ? 0 : 1 }, { merge: true }); showNotification('success', 'تم التحديث'); } catch (e) {} finally { setLoading(false); }
       };
 
       const togglePhoneVisibility = async () => {
-        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { isPhoneHidden: !donorData.isPhoneHidden }, { merge: true }); showNotification('success', 'تم تحديث خصوصية الهاتف'); } catch (e) { showNotification('error', "خطأ!"); } finally { setLoading(false); }
+        setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { isPhoneHidden: !donorData.isPhoneHidden }, { merge: true }); showNotification('success', 'تم التحديث'); } catch (e) {} finally { setLoading(false); }
       };
 
-      const handleDonatedToday = () => setModalConfig({ isOpen: true, title: "تأكيد التبرع", message: "سيتم إخفاء رقمك لـ 3 أشهر.", isDestructive: false, confirmText: "متأكد", action: async () => { setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { lastDonationDate: serverTimestamp(), status: 0 }, { merge: true }); showNotification('success', 'تم بدء فترة النقاهة.'); } catch (e) { showNotification('error', "خطأ."); } finally { setLoading(false); } } });
-      const handleCancelCooldown = async () => setModalConfig({ isOpen: true, title: "إلغاء فترة النقاهة", message: "تفعيل التبرع عن طريق الخطأ؟", isDestructive: false, confirmText: "نعم، إلغاء", action: async () => { setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { lastDonationDate: null, status: 1 }, { merge: true }); showNotification('success', 'تم التراجع.'); } catch (e) { showNotification('error', "خطأ."); } finally { setLoading(false); } } });
-
-      const isAvailable = donorData.status !== 0;
+      const handleDonatedToday = () => setModalConfig({ isOpen: true, title: "تأكيد التبرع", message: "سيتم إخفاء رقمك لـ 3 أشهر.", isDestructive: false, confirmText: "تأكيد", action: async () => { setLoading(true); try { await setDoc(doc(db, DONORS_COLLECTION, user.uid), { lastDonationDate: serverTimestamp(), status: 0 }, { merge: true }); showNotification('success', 'تم بدء النقاهة.'); } catch (e) {} finally { setLoading(false); } } });
 
       return (
         <div className="pb-32 font-sans" dir="rtl">
-          
           <AppHeader isDark={isDark} toggleTheme={toggleTheme} setView={setView} notifications={notifications} markAsRead={markAsRead} deleteNotification={deleteNotification} rejectRequest={rejectRequest} showNotification={showNotification} />
-
           <div className="px-6">
             <div className="flex flex-col items-center mb-6 animate-fadeIn">
-               <div className="w-24 h-24 rounded-full glass-panel flex items-center justify-center mb-4 border-2 border-slate-100 dark:border-slate-800 shadow-lg relative">
-                  <User size={40} className={isAvailable && isEligibleToDonate ? "text-emerald-500 dark:text-brand-accent" : "text-slate-400 dark:text-slate-500"}/>
-                  <div className={`absolute bottom-0 right-0 w-6 h-6 rounded-full border-[3px] border-white dark:border-slate-900 ${isAvailable && isEligibleToDonate ? 'bg-emerald-500 dark:bg-brand-accent shadow-[0_0_10px_#CDEB57]' : 'bg-slate-400 dark:bg-slate-500'}`}></div>
-               </div>
-               
-               <div className="flex items-center gap-2 justify-center w-full mb-2">
-                  {isEditingUsername ? ( <div className="flex items-center gap-1 glass-panel p-1 rounded-xl"><input value={newUsername} onChange={e=>setNewUsername(e.target.value)} className="w-40 text-center bg-slate-50 dark:bg-slate-900 rounded-lg px-2 py-1 outline-none font-bold" /><button onClick={()=>handleUpdateField('username', newUsername, setIsEditingUsername)} className="bg-brand-accent text-slate-900 p-1.5 rounded-lg"><Save size={16}/></button><button onClick={()=>setIsEditingUsername(false)} className="bg-red-100 dark:bg-red-500/20 text-red-500 p-1.5 rounded-lg"><X size={16}/></button></div> ) : ( <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2">{donorData.username}<button onClick={()=>setIsEditingUsername(true)} className="text-slate-400 dark:text-slate-500"><Edit2 size={16}/></button></h2> )}
-               </div>
-               
-               <div className="flex items-center gap-2 mb-3">
-                  {isEditingPhone ? ( <div className="flex items-center gap-1 glass-panel p-1 rounded-xl"><input value={newPhone} onChange={e=>setNewPhone(e.target.value)} className="w-32 text-center bg-slate-50 dark:bg-slate-900 rounded-lg px-2 py-1 outline-none font-bold" dir="ltr"/><button onClick={()=>handleUpdateField('phone', newPhone, setIsEditingPhone)} className="bg-brand-accent text-slate-900 p-1.5 rounded-lg"><Save size={16}/></button><button onClick={()=>setIsEditingPhone(false)} className="bg-red-100 dark:bg-red-500/20 text-red-500 p-1.5 rounded-lg"><X size={16}/></button></div> ) : ( <div className="flex items-center gap-2 glass-panel px-4 py-1.5 rounded-full"><Phone size={14} className="text-slate-400 dark:text-slate-500"/><span className="text-slate-700 dark:text-slate-300 font-bold" dir="ltr">{donorData.phone}</span><button onClick={()=>setIsEditingPhone(true)} className="text-emerald-600 dark:text-brand-accent p-1 rounded-full"><Edit2 size={14}/></button></div> )}
-               </div>
-
-               <div className="flex items-center gap-2">
-                  {isEditingNeighborhood ? ( <div className="flex items-center gap-1 glass-panel p-1 rounded-xl"><input value={newNeighborhood} onChange={e=>setNewNeighborhood(e.target.value)} className="w-32 text-center bg-slate-50 dark:bg-slate-900 rounded-lg px-2 py-1 outline-none font-bold"/><button onClick={()=>handleUpdateField('neighborhood', newNeighborhood, setIsEditingNeighborhood)} className="bg-brand-accent text-slate-900 p-1.5 rounded-lg"><Save size={16}/></button><button onClick={()=>setIsEditingNeighborhood(false)} className="bg-red-100 dark:bg-red-500/20 text-red-500 p-1.5 rounded-lg"><X size={16}/></button></div> ) : ( <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/50 px-4 py-1.5 rounded-full text-sm"><MapPin size={14} className="text-slate-400 dark:text-slate-500"/><span className="text-slate-600 dark:text-slate-400 font-medium">{donorData.neighborhood || 'الأمير عبد القادر'}</span><button onClick={()=>setIsEditingNeighborhood(true)} className="text-slate-400 hover:text-emerald-600 dark:hover:text-brand-accent"><Edit2 size={12}/></button><span className="mx-1 text-slate-300 dark:text-slate-700">•</span><span dir="ltr" className="font-bold text-emerald-600 dark:text-brand-accent">{donorData.bloodType}</span></div> )}
-               </div>
+               <div className="w-24 h-24 rounded-full glass-panel flex items-center justify-center mb-4"><User size={40} className="text-emerald-500"/></div>
+               <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">{donorData.username}</h2>
+               <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/50 px-4 py-1.5 rounded-full text-sm font-bold text-slate-600 dark:text-slate-400">{donorData.phone}</div>
             </div>
 
-            {!isEligibleToDonate && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-2xl p-4 mb-4 text-center animate-fadeIn relative"><button onClick={handleCancelCooldown} className="absolute top-2 left-2 p-2 bg-white/50 dark:bg-slate-950/20 text-blue-400 hover:text-blue-600 flex items-center gap-1 text-[10px] font-bold rounded-full"><RotateCcw size={14}/> إلغاء بالخطأ</button><CalendarClock size={28} className="text-blue-500 dark:text-blue-400 mx-auto mb-2 mt-2" /><h4 className="font-bold text-blue-700 dark:text-blue-300 mb-1">فترة نقاهة صحية</h4><div className="bg-white dark:bg-slate-900/50 py-2 rounded-xl text-blue-800 dark:text-white font-black mx-4 mt-2">متبقي {daysRemaining} يوماً</div></div>
-            )}
+            {!isEligibleToDonate && <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4 text-center"><CalendarClock size={28} className="text-blue-500 mx-auto mb-2" /><h4 className="font-bold text-blue-700">فترة نقاهة صحية</h4><div className="bg-white py-2 rounded-xl text-blue-800 font-black mt-2">متبقي {daysRemaining} يوماً</div></div>}
 
             <div className="flex gap-4 mb-4">
-                <div onClick={!loading && isEligibleToDonate ? toggleStatus : undefined} className={`flex-1 relative overflow-hidden rounded-[2rem] p-5 shadow-xl transition-all transform ${isEligibleToDonate ? 'cursor-pointer active:scale-95 glass-panel' : 'opacity-60 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800'} ${!isAvailable && isEligibleToDonate ? 'opacity-70 grayscale' : ''}`}>
-                   <div className={`absolute top-0 left-0 w-full h-1 ${(isAvailable && isEligibleToDonate) ? 'bg-emerald-500 dark:bg-brand-accent shadow-[0_0_15px_#CDEB57]' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
-                   <div className="flex flex-col items-center text-center">
-                       <h3 className="font-black text-slate-800 dark:text-white mb-2 text-sm">{isAvailable ? 'متاح للعامة' : 'حساب مخفي'}</h3>
-                       <div className={`w-12 h-6 rounded-full flex items-center p-1 transition-colors ${(isAvailable && isEligibleToDonate) ? 'bg-emerald-500 dark:bg-brand-accent' : 'bg-slate-300 dark:bg-slate-950 border dark:border-slate-800'}`}><div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${(isAvailable && isEligibleToDonate) ? '-translate-x-6' : 'translate-x-0'}`}></div></div>
-                   </div>
-                </div>
-
-                <div onClick={!loading ? togglePhoneVisibility : undefined} className={`flex-1 relative overflow-hidden rounded-[2rem] p-5 shadow-xl transition-all transform cursor-pointer active:scale-95 glass-panel ${donorData.isPhoneHidden ? 'opacity-70 grayscale' : ''}`}>
-                   <div className={`absolute top-0 left-0 w-full h-1 ${(!donorData.isPhoneHidden) ? 'bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_15px_#818cf8]' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
-                   <div className="flex flex-col items-center text-center">
-                       <h3 className="font-black text-slate-800 dark:text-white mb-2 text-sm">{!donorData.isPhoneHidden ? 'رقمي ظاهر' : 'رقمي مخفي'}</h3>
-                       <div className={`w-12 h-6 rounded-full flex items-center p-1 transition-colors ${(!donorData.isPhoneHidden) ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-slate-300 dark:bg-slate-950 border dark:border-slate-800'}`}><div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${(!donorData.isPhoneHidden) ? '-translate-x-6' : 'translate-x-0'}`}></div></div>
-                   </div>
-                </div>
+                <div onClick={!loading && isEligibleToDonate ? toggleStatus : undefined} className={`flex-1 glass-panel text-center p-5 rounded-3xl ${isEligibleToDonate?'cursor-pointer':'opacity-50'}`}><h3 className="font-bold mb-2 text-sm text-slate-800 dark:text-white">{isAvailable ? 'متاح للعامة' : 'حساب مخفي'}</h3></div>
+                <div onClick={!loading ? togglePhoneVisibility : undefined} className="flex-1 glass-panel text-center p-5 rounded-3xl cursor-pointer"><h3 className="font-bold mb-2 text-sm text-slate-800 dark:text-white">{!donorData.isPhoneHidden ? 'رقمي ظاهر' : 'رقمي مخفي'}</h3></div>
             </div>
 
-            {isEligibleToDonate && ( <button onClick={handleDonatedToday} className="w-full mt-2 bg-white dark:bg-slate-900 border-2 border-emerald-500 dark:border-brand-accent text-emerald-600 dark:text-brand-accent py-4 rounded-[2rem] font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95"><ShieldCheck size={22} /> تبرعت اليوم (بدء النقاهة)</button> )}
-
-            <div className="mt-8 text-center flex flex-col gap-4">
-                <button onClick={handleLogout} className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white text-sm font-bold flex items-center justify-center gap-2 w-full py-4 glass-panel rounded-2xl transition"><LogOut size={16} /> تسجيل الخروج</button>
-                <button onClick={handleDeleteAccount} className="text-red-400 hover:text-red-500 text-sm font-bold flex items-center justify-center gap-2 w-full py-4 glass-panel rounded-2xl transition"><Trash2 size={16} /> حذف حسابي نهائياً</button>
-            </div>
+            {isEligibleToDonate && <button onClick={handleDonatedToday} className="w-full mt-2 bg-white border-2 border-emerald-500 text-emerald-600 py-4 rounded-[2rem] font-bold flex justify-center gap-2"><ShieldCheck size={22} /> تبرعت اليوم</button>}
+            <div className="mt-8 text-center"><button onClick={handleLogout} className="text-slate-500 font-bold flex justify-center gap-2 w-full py-4 glass-panel rounded-2xl"><LogOut size={16} /> تسجيل الخروج</button></div>
           </div>
           <CustomModal isOpen={modalConfig.isOpen} title={modalConfig.title} message={modalConfig.message} isDestructive={modalConfig.isDestructive} confirmText={modalConfig.confirmText} onCancel={closeModal} onConfirm={() => { modalConfig.action(); closeModal(); }} />
         </div>
       );
     }
 
-    function App() {
-      const [user, setUser] = useState(null);
-      const [userProfile, setUserProfile] = useState(null);
-      const [donors, setDonors] = useState([]);
-      const [medicines, setMedicines] = useState([]); 
-      const [pharmacies, setPharmacies] = useState([]);
-      const [notifications, setNotifications] = useState([]); 
-      const [view, setView] = useState('home');
-      const [loading, setLoading] = useState(true);
-      const [loadingMed, setLoadingMed] = useState(true);
-      const [loadingPharmacies, setLoadingPharmacies] = useState(true);
-      const [notification, setNotification] = useState(null); 
-      const [initializing, setInitializing] = useState(true);
-      const [modalConfig, setModalConfig] = useState({ isOpen: false });
-      
-      const [isDark, setIsDark] = useState(() => { const saved = localStorage.getItem('theme'); return saved ? saved === 'dark' : false; });
+    // --- 6. Main App Component ---
 
-      useEffect(() => {
-        if (isDark) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); } 
-        else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
-      }, [isDark]);
+    function App() {
+      const [user, setUser] = useState(null); const [userProfile, setUserProfile] = useState(null);
+      const [donors, setDonors] = useState([]); const [medicines, setMedicines] = useState([]); const [pharmacies, setPharmacies] = useState([]); const [notifications, setNotifications] = useState([]); 
+      const [view, setView] = useState('home'); const [loading, setLoading] = useState(true); const [loadingMed, setLoadingMed] = useState(true); const [notification, setNotification] = useState(null); const [initializing, setInitializing] = useState(true);
+      const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
+
+      useEffect(() => { if (isDark) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); } else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); } }, [isDark]);
 
       useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => {
           if (u) {
             setUser(u);
-            onSnapshot(doc(db, DONORS_COLLECTION, u.uid), (d) => {
-              if (d.exists()) { setUserProfile({ id: d.id, ...d.data() }); } 
-              if (initializing) setInitializing(false);
-            }, (err) => { if (initializing) setInitializing(false); });
-            
-            onSnapshot(query(collection(db, NOTIFICATIONS_COLLECTION), orderBy('createdAt', 'desc')), (s) => { 
-                const myNotifs = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(n => n.toUserId === u.uid);
-                setNotifications(myNotifs);
-            });
-
-          } else {
-            setUser(null); setUserProfile(null); setNotifications([]);
-            if(view === 'profile') setView('home');
-            if (initializing) setInitializing(false);
-          }
+            onSnapshot(doc(db, DONORS_COLLECTION, u.uid), (d) => { if (d.exists()) setUserProfile({ id: d.id, ...d.data() }); if (initializing) setInitializing(false); }, () => setInitializing(false));
+            onSnapshot(query(collection(db, NOTIFICATIONS_COLLECTION), orderBy('createdAt', 'desc')), (s) => setNotifications(s.docs.map(d => ({ id: d.id, ...d.data() })).filter(n => n.toUserId === u.uid)));
+          } else { setUser(null); setUserProfile(null); setNotifications([]); if(view === 'profile') setView('home'); setInitializing(false); }
         });
         return () => unsubscribe();
       }, [initializing, view]); 
 
       useEffect(() => {
-        const unsubDonors = onSnapshot(query(collection(db, DONORS_COLLECTION), orderBy('createdAt', 'desc')), (s) => { setDonors(s.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }, () => setLoading(false));
-        const unsubMedicines = onSnapshot(query(collection(db, MEDICINES_COLLECTION), orderBy('createdAt', 'desc')), (s) => { setMedicines(s.docs.map(d => ({ id: d.id, ...d.data() }))); setLoadingMed(false); }, () => setLoadingMed(false));
-        const unsubPharmacies = onSnapshot(query(collection(db, PHARMACIES_COLLECTION), orderBy('createdAt', 'desc')), (s) => { setPharmacies(s.docs.map(d => ({ id: d.id, ...d.data() }))); setLoadingPharmacies(false); }, () => setLoadingPharmacies(false));
+        const unsubDonors = onSnapshot(query(collection(db, DONORS_COLLECTION), orderBy('createdAt', 'desc')), (s) => { setDonors(s.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); });
+        const unsubMedicines = onSnapshot(query(collection(db, MEDICINES_COLLECTION), orderBy('createdAt', 'desc')), (s) => { setMedicines(s.docs.map(d => ({ id: d.id, ...d.data() }))); setLoadingMed(false); });
+        const unsubPharmacies = onSnapshot(query(collection(db, PHARMACIES_COLLECTION), orderBy('createdAt', 'desc')), (s) => setPharmacies(s.docs.map(d => ({ id: d.id, ...d.data() }))));
         return () => { unsubDonors(); unsubMedicines(); unsubPharmacies(); };
       }, []);
 
       const showNotification = (type, msg) => { setNotification({ type, msg }); setTimeout(() => setNotification(null), 3500); };
       const handleCopy = (phone) => { navigator.clipboard.writeText(phone); showNotification('success', 'تم النسخ'); };
       const toggleTheme = () => setIsDark(!isDark);
-      const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
-
       const markAsRead = async (id) => { try { await updateDoc(doc(db, NOTIFICATIONS_COLLECTION, id), { read: true }); } catch(e){} };
       const deleteNotification = async (id) => { try { await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, id)); } catch(e){} };
 
-      const rejectRequest = (notif) => {
+      const rejectRequest = async (notif) => {
           if (!user || !userProfile) return;
-          setModalConfig({
-             isOpen: true,
-             title: "الاعتذار عن التبرع",
-             message: "هل أنت متأكد أنك تريد إرسال اعتذار لهذا الشخص؟ سيتم إخباره بأنك غير متاح حالياً وحذف هذا الطلب من إشعاراتك.",
-             isDestructive: true,
-             confirmText: "نعم، أرسل اعتذار",
-             action: async () => {
-                 try {
-                     await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
-                         toUserId: notif.fromUserId,
-                         fromUserId: user.uid,
-                         title: "اعتذار عن التبرع 😔",
-                         body: `نعتذر، المتبرع "${userProfile.username || 'فاعل خير'}" غير متاح للتبرع في الوقت الحالي (قد يكون مشغولاً أو في فترة نقاهة).\nنسأل الله العظيم أن يشفي مريضكم ويعافيه.`,
-                         type: 'info',
-                         read: false,
-                         createdAt: serverTimestamp()
-                     });
-                     await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, notif.id));
-                     showNotification('success', 'تم إرسال الاعتذار بنجاح.');
-                 } catch(e) { showNotification('error', 'حدث خطأ.'); }
-             }
-         });
+          try {
+              await addDoc(collection(db, NOTIFICATIONS_COLLECTION), { toUserId: notif.fromUserId, fromUserId: user.uid, title: "اعتذار عن التبرع 😔", body: `نعتذر، المتبرع "${userProfile.username}" غير متاح للتبرع في الوقت الحالي.\nنسأل الله العظيم أن يشفي مريضكم.`, type: 'info', read: false, createdAt: serverTimestamp() });
+              await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, notif.id));
+              showNotification('success', 'تم إرسال الاعتذار.');
+          } catch(e) {}
       };
 
-      if (initializing) return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950"><Loader2 className="animate-spin text-emerald-500 dark:text-brand-accent" size={48}/></div>;
+      if (initializing) return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950"><Loader2 className="animate-spin text-emerald-500" size={48}/></div>;
 
       return (
         <div className="min-h-screen relative">
@@ -1162,14 +738,7 @@
           {view === 'profile' && <ProfileView user={user} donorData={userProfile} showNotification={showNotification} isDark={isDark} toggleTheme={toggleTheme} setView={setView} notifications={notifications} markAsRead={markAsRead} deleteNotification={deleteNotification} rejectRequest={rejectRequest} />}
           
           <BottomNav view={view} setView={setView} user={user} />
-
-          {notification && (
-            <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl border z-[110] flex items-center gap-2 font-bold animate-fadeIn w-max max-w-[90%] ${notification.type === 'success' ? 'bg-brand-accent text-slate-900 border-brand-accentHover' : 'glass-panel text-red-500 dark:text-red-400 border-red-200 dark:border-red-500/30'}`}>
-              {notification.type === 'success' ? <CheckCircle2 size={18} className="flex-shrink-0"/> : <AlertTriangle size={18} className="flex-shrink-0"/>} 
-              <span className="text-sm">{notification.msg}</span>
-            </div>
-          )}
-          <CustomModal isOpen={modalConfig.isOpen} title={modalConfig.title} message={modalConfig.message} isDestructive={modalConfig.isDestructive} confirmText={modalConfig.confirmText} onCancel={closeModal} onConfirm={() => { modalConfig.action(); closeModal(); }} />
+          <Toast notification={notification} />
         </div>
       );
     }
