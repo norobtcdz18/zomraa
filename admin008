@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Zomraa Admin - لوحة التحكم</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Cairo', 'sans-serif'] },
+          colors: { brand: { accent: '#818cf8', accentHover: '#6366f1' } }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+        "lucide-react": "https://esm.sh/lucide-react@0.344.0"
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif; transition: background 0.3s, color 0.3s;
+      -webkit-tap-highlight-color: transparent; min-height: 100vh;
+      padding-bottom: env(safe-area-inset-bottom); background: #F8FAFC; color: #1e293b;
+    }
+    .glass-panel { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .custom-input { background: #f8fafc; border: 1px solid #cbd5e1; color: #1e293b; }
+    .custom-input::placeholder { color: #94a3b8; }
+    html.dark body { background: linear-gradient(145deg, #0f172a 0%, #020617 100%); background-attachment: fixed; color: #f8fafc; }
+    html.dark .glass-panel { background: rgba(30,41,59,0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); }
+    html.dark .custom-input { background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); color: #f8fafc; }
+    html.dark .custom-input::placeholder { color: #64748b; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-type="module">
+  import React, { useState, useEffect, useMemo } from 'react';
+  import { createRoot } from 'react-dom/client';
+  import { initializeApp } from 'firebase/app';
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+  import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, updateDoc, addDoc } from 'firebase/firestore';
+  import {
+    Users, Stethoscope, Pill, ShieldAlert, LayoutDashboard, Plus, Trash2, CheckCircle2,
+    AlertTriangle, Info, X, Activity, Bell, Send, Lock, Moon, Sun, LogOut, Loader2,
+    Droplet, ArrowRight, ArrowLeft, Check, MapPin, Map, Calendar, Edit, XCircle, Phone,
+    Clock, HeartPulse, Star, MessageSquare, Reply
+  } from 'lucide-react';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyANXo96l5_hP1iTH_K8TaYixdGHJwr6x-0",
+    authDomain: "blod-6a25b.firebaseapp.com",
+    projectId: "blod-6a25b",
+    storageBucket: "blod-6a25b.firebasestorage.app",
+    messagingSenderId: "766563585970",
+    appId: "1:766563585970:web:ad99353f2dbcbf759a1eab"
+  };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const DONORS_COLLECTION = "donors";
+  const MEDICINES_COLLECTION = "medicines";
+  const PHARMACIES_COLLECTION = "pharmacies";
+  const DOCTORS_COLLECTION = "doctors";
+  const REPORTS_COLLECTION = "reports";
+  const NOTIFICATIONS_COLLECTION = "notifications";
+  const ADMIN_REQUESTS_COLLECTION = "admin_requests";
+  const DUTY_DATES_COLLECTION = "duty_dates";
+
+  function getLocalDateString(date = new Date()) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  function getRatingInfo(item) {
+    const ratings = item?.ratings && typeof item.ratings === 'object' ? item.ratings : {};
+    const values = Object.values(ratings).map(Number).filter(v => !isNaN(v) && v >= 1 && v <= 5);
+    if (values.length === 0) return { average: Number(item?.rating || 0), count: Number(item?.ratingCount || 0) };
+    const sum = values.reduce((t, v) => t + v, 0);
+    return { average: sum / values.length, count: values.length };
+  }
+  function sortDoctorsList(list) {
+    return [...list].sort((a, b) => {
+      const specComp = String(a.specialty || '').localeCompare(String(b.specialty || ''), 'ar');
+      if (specComp !== 0) return specComp;
+      return String(a.name || '').localeCompare(String(b.name || ''), 'ar');
+    });
+  }
+
+  function Toast({ notification }) {
+    if (!notification) return null;
+    return (
+      <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl border z-[110] flex items-center gap-2 font-bold animate-fadeIn w-max max-w-[90%] ${notification.type === 'success' ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-red-50 dark:bg-slate-800 text-red-500 dark:text-red-400 border-red-200 dark:border-red-500/50'}`}>
+        {notification.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+        <span className="text-sm">{notification.msg}</span>
+      </div>
+    );
+  }
+
+  function CustomModal({ isOpen, title, message, onConfirm, onCancel, isDestructive, confirmText }) {
+    if (!isOpen) return null;
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm animate-fadeIn p-4">
+        <div className="glass-panel w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative overflow-hidden">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto ${isDestructive ? 'bg-red-100 dark:bg-red-500/20 text-red-500 dark:text-red-400' : 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'}`}>
+            {isDestructive ? <AlertTriangle size={24} /> : <Info size={24} />}
+          </div>
+          <h3 className="text-xl font-black text-center mb-2">{title}</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-center mb-6 text-sm leading-relaxed whitespace-pre-line">{message}</p>
+          <div className="flex gap-3">
+            <button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border text-slate-600 dark:text-slate-300 font-bold">إلغاء</button>
+            <button onClick={onConfirm} className={`flex-1 py-3 rounded-xl font-bold transition shadow-lg ${isDestructive ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-indigo-500 text-white hover:bg-indigo-600'}`}>{confirmText}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function AdminHeader({ isDark, toggleTheme, view, setView }) {
+    const handleLogout = () => signOut(auth);
+    const isSubView = ['donors','medicines','reports','doctors','requests','duty'].includes(view);
+    return (
+      <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800 px-4 py-4 flex justify-between items-center mb-6 shadow-sm">
+        {isSubView ? (
+          <button onClick={() => setView('dashboard')} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-indigo-500"><ArrowRight size={20} /></button>
+        ) : (
+          <button onClick={handleLogout} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-red-500 hover:text-red-600 transition bg-red-50 dark:bg-slate-800"><LogOut size={18} /></button>
+        )}
+        <div className="text-center font-black text-indigo-500 dark:text-indigo-400 text-xl tracking-widest">Zomraa Admin</div>
+        <button onClick={toggleTheme} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400">
+          {isDark ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+      </div>
+    );
+  }
+
+  function AdminBottomNav({ view, setView }) {
+    const isSubView = ['donors','medicines','reports','doctors','requests','duty'].includes(view);
+    if (isSubView) return null;
+    return (
+      <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-50 pb-[env(safe-area-inset-bottom)]">
+        <div className="flex justify-around items-center h-16 px-2">
+          <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1 w-[16%] ${view==='dashboard'?'text-indigo-500':'text-slate-400'}`}><LayoutDashboard size={20}/><span className="text-[10px] font-bold">الرئيسية</span></button>
+          <button onClick={() => setView('pharmacies')} className={`flex flex-col items-center gap-1 w-[16%] ${view==='pharmacies'?'text-indigo-500':'text-slate-400'}`}><Stethoscope size={20}/><span className="text-[10px] font-bold">صيدليات</span></button>
+          <button onClick={() => setView('duty')} className={`flex flex-col items-center gap-1 w-[16%] ${view==='duty'?'text-indigo-500':'text-slate-400'}`}><Calendar size={20}/><span className="text-[10px] font-bold">مناوبات</span></button>
+          <button onClick={() => setView('requests')} className={`flex flex-col items-center gap-1 w-[16%] ${view==='requests'?'text-indigo-500':'text-slate-400'}`}><MessageSquare size={20}/><span className="text-[10px] font-bold">الطلبات</span></button>
+          <button onClick={() => setView('notifications')} className={`flex flex-col items-center gap-1 w-[16%] ${view==='notifications'?'text-indigo-500':'text-slate-400'}`}><Activity size={20}/><span className="text-[10px] font-bold">النشاط</span></button>
+          <button onClick={() => setView('broadcast')} className={`flex flex-col items-center gap-1 w-[16%] ${view==='broadcast'?'text-indigo-500':'text-slate-400'}`}><Send size={20}/><span className="text-[10px] font-bold">إعلانات</span></button>
+        </div>
+      </div>
+    );
+  }
+
+  function DashboardView({ donors=[], pharmacies=[], doctors=[], medicines=[], reports=[], adminRequests=[], setView }) {
+    const safeDonors = Array.isArray(donors) ? donors.length : 0;
+    const safePharm = Array.isArray(pharmacies) ? pharmacies.length : 0;
+    const safeDoctors = Array.isArray(doctors) ? doctors.length : 0;
+    const safeMed = Array.isArray(medicines) ? medicines.length : 0;
+    const safeReports = Array.isArray(reports) ? reports.length : 0;
+    const safeRequests = Array.isArray(adminRequests) ? adminRequests.length : 0;
+    return (
+      <div className="animate-fadeIn px-4 md:px-6">
+        <h2 className="text-xl font-black text-slate-800 dark:text-white mb-6">لوحة الإحصائيات والإدارة</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div onClick={() => setView('donors')} className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition"><Users size={36} className="text-indigo-500 mb-2"/><span className="text-3xl font-black">{safeDonors}</span><span className="text-sm font-bold mt-1">المتبرعين</span></div>
+          <div onClick={() => setView('medicines')} className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition"><Pill size={36} className="text-orange-500 mb-2"/><span className="text-3xl font-black">{safeMed}</span><span className="text-sm font-bold mt-1">طلبات الأدوية</span></div>
+          <div onClick={() => setView('reports')} className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition"><ShieldAlert size={36} className="text-red-500 mb-2"/><span className="text-3xl font-black">{safeReports}</span><span className="text-sm font-bold mt-1">البلاغات</span></div>
+          <div onClick={() => setView('requests')} className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition"><MessageSquare size={36} className="text-blue-500 mb-2"/><span className="text-3xl font-black">{safeRequests}</span><span className="text-sm font-bold mt-1">الطلبات والرسائل</span></div>
+          <div onClick={() => setView('pharmacies')} className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition"><Stethoscope size={36} className="text-emerald-500 mb-2"/><span className="text-3xl font-black">{safePharm}</span><span className="text-sm font-bold mt-1">الصيدليات</span></div>
+          <div onClick={() => setView('doctors')} className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition"><HeartPulse size={36} className="text-blue-500 mb-2"/><span className="text-3xl font-black">{safeDoctors}</span><span className="text-sm font-bold mt-1">الأطباء</span></div>
+        </div>
+      </div>
+    );
+  }
+  
+  // ======================== PharmaciesManager ========================
+  function PharmaciesManager({ pharmacies = [], showNotification, confirmAction }) {
+    const [showForm, setShowForm] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [name, setName] = useState(''); const [phone, setPhone] = useState('');
+    const [address, setAddress] = useState(''); const [mapLink, setMapLink] = useState('');
+    const [openTime, setOpenTime] = useState('08:00'); const [closeTime, setCloseTime] = useState('22:00');
+    const [loading, setLoading] = useState(false);
+    const safePharmacies = Array.isArray(pharmacies) ? pharmacies : [];
+
+    const resetForm = () => {
+      setShowForm(false); setEditingId(null);
+      setName(''); setPhone(''); setAddress(''); setMapLink('');
+      setOpenTime('08:00'); setCloseTime('22:00');
+    };
+    const handleEditClick = (pharmacy) => {
+      setEditingId(pharmacy.id); setName(pharmacy.name || ''); setPhone(pharmacy.phone || '');
+      setAddress(pharmacy.address || ''); setMapLink(pharmacy.mapLink || '');
+      setOpenTime(pharmacy.openTime || '08:00'); setCloseTime(pharmacy.closeTime || '22:00');
+      setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      if (!name.trim() || !address.trim()) { showNotification('error', 'أدخل الاسم والعنوان'); return; }
+      setLoading(true);
+      try {
+        const data = { name: name.trim(), phone: phone.trim(), address: address.trim(), mapLink: mapLink.trim(), openTime, closeTime, updatedAt: serverTimestamp() };
+        if (editingId) {
+          await updateDoc(doc(db, PHARMACIES_COLLECTION, editingId), data);
+          showNotification('success', 'تم تعديل الصيدلية');
+        } else {
+          data.createdAt = serverTimestamp();
+          await addDoc(collection(db, PHARMACIES_COLLECTION), data);
+          showNotification('success', 'تمت إضافة الصيدلية');
+        }
+        resetForm();
+      } catch { showNotification('error', 'حدث خطأ'); }
+      finally { setLoading(false); }
+    };
+    const deletePharmacy = (id) => {
+      confirmAction("حذف صيدلية", "هل تريد حذف هذه الصيدلية؟", "حذف", async () => {
+        try { await deleteDoc(doc(db, PHARMACIES_COLLECTION, id)); showNotification('success', 'تم الحذف'); }
+        catch { showNotification('error', 'فشل الحذف'); }
+      }, true);
+    };
+
+    return (
+      <div className="animate-fadeIn px-4 md:px-6 pb-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-black text-slate-800 dark:text-white"><Stethoscope className="inline ml-2 text-emerald-500"/> إدارة الصيدليات</h2>
+          <button onClick={() => setShowForm(!showForm)} className="bg-emerald-500 text-white p-2 rounded-xl shadow-lg">
+            {showForm ? <X size={20} /> : <Plus size={20} />}
+          </button>
+        </div>
+        {showForm && (
+          <form onSubmit={handleSubmit} className="glass-panel p-5 rounded-3xl mb-8 flex flex-col gap-4 animate-fadeIn">
+            <div className="flex justify-between items-center">
+              <button type="button" onClick={resetForm} className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">إلغاء</button>
+              <h3 className="font-bold text-emerald-600 flex items-center gap-2"><Plus size={18}/> {editingId ? 'تعديل صيدلية' : 'إضافة صيدلية جديدة'}</h3>
+            </div>
+            <input type="text" placeholder="اسم الصيدلية" value={name} onChange={e => setName(e.target.value)} className="custom-input p-3 rounded-xl text-right" required />
+            <div className="grid grid-cols-2 gap-4">
+              <input type="text" placeholder="العنوان" value={address} onChange={e => setAddress(e.target.value)} className="custom-input p-3 rounded-xl text-right" required />
+              <input type="tel" placeholder="رقم الهاتف" value={phone} onChange={e => setPhone(e.target.value)} className="custom-input p-3 rounded-xl text-right" dir="ltr" />
+            </div>
+            <input type="url" placeholder="رابط الخريطة" value={mapLink} onChange={e => setMapLink(e.target.value)} className="custom-input p-3 rounded-xl text-right" dir="ltr" />
+            <div className="grid grid-cols-2 gap-4">
+              <div><label className="text-xs block mb-1">وقت الافتتاح</label><input type="time" value={openTime} onChange={e => setOpenTime(e.target.value)} className="custom-input p-3 rounded-xl text-center w-full" /></div>
+              <div><label className="text-xs block mb-1">وقت الإغلاق</label><input type="time" value={closeTime} onChange={e => setCloseTime(e.target.value)} className="custom-input p-3 rounded-xl text-center w-full" /></div>
+            </div>
+            <button type="submit" disabled={loading} className="bg-emerald-500 text-white font-bold p-3 rounded-xl hover:bg-emerald-600 disabled:opacity-50 flex justify-center gap-2">
+              {loading ? <Loader2 className="animate-spin" /> : (editingId ? <><Edit size={16} /> تحديث</> : 'حفظ الصيدلية')}
+            </button>
+          </form>
+        )}
+        <div className="space-y-3">
+          {safePharmacies.length === 0 ? <p className="text-center py-10 text-slate-500">لا توجد صيدليات.</p> :
+            safePharmacies.map(p => (
+              <div key={p.id} className="glass-panel p-4 rounded-2xl flex justify-between items-start">
+                <div className="flex items-center gap-2">
+                  <button onClick={() => deletePharmacy(p.id)} className="p-2 bg-red-50 text-red-500 rounded-lg"><Trash2 size={16} /></button>
+                  <button onClick={() => handleEditClick(p)} className="p-2 bg-indigo-50 text-indigo-500 rounded-lg"><Edit size={16} /></button>
+                </div>
+                <div className="text-right flex-1 pr-2">
+                  <h4 className="font-black flex items-center justify-end gap-1">
+                    {p.mapLink && <a href={p.mapLink} target="_blank" className="text-blue-500"><Map size={14} /></a>}
+                    {p.name || 'بدون اسم'}
+                  </h4>
+                  <p className="text-xs text-slate-500"><MapPin size={10} /> {p.address || '---'}</p>
+                  {p.phone && <p className="text-xs" dir="ltr"><Phone size={10} /> {p.phone}</p>}
+                  <p className="text-xs text-indigo-500"><Clock size={10} /> {p.openTime || '08:00'} - {p.closeTime || '22:00'}</p>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    );
+  }
+
+  // ======================== DutyManager ========================
+  function DutyManager({ pharmacies = [], showNotification }) {
+    const [selectedDate, setSelectedDate] = useState(getLocalDateString());
+    const [selectedPharmacies, setSelectedPharmacies] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [dutyRecords, setDutyRecords] = useState([]);
+    const safePharmacies = Array.isArray(pharmacies) ? pharmacies : [];
+
+    useEffect(() => {
+      const unsub = onSnapshot(collection(db, DUTY_DATES_COLLECTION), (snap) => {
+        setDutyRecords(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      });
+      return () => unsub();
+    }, []);
+
+    useEffect(() => {
+      const record = dutyRecords.find(r => r.date === selectedDate);
+      setSelectedPharmacies(record ? record.pharmacyIds || [] : []);
+    }, [selectedDate, dutyRecords]);
+
+    const togglePharmacy = (id) => {
+      setSelectedPharmacies(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    };
+
+    const saveDuty = async () => {
+      setLoading(true);
+      try {
+        const existing = dutyRecords.find(r => r.date === selectedDate);
+        if (existing) {
+          await updateDoc(doc(db, DUTY_DATES_COLLECTION, existing.id), {
+            pharmacyIds: selectedPharmacies, updatedAt: serverTimestamp()
+          });
+        } else {
+          await addDoc(collection(db, DUTY_DATES_COLLECTION), {
+            date: selectedDate, pharmacyIds: selectedPharmacies, createdAt: serverTimestamp()
+          });
+        }
+        showNotification('success', 'تم حفظ المناوبات');
+      } catch { showNotification('error', 'فشل الحفظ'); }
+      finally { setLoading(false); }
+    };
+
+    return (
+      <div className="animate-fadeIn px-4 md:px-6 pb-6">
+        <h2 className="text-xl font-black text-slate-800 dark:text-white mb-6"><Calendar className="inline ml-2 text-indigo-500"/> إدارة المناوبات</h2>
+        <div className="glass-panel p-4 rounded-2xl mb-6">
+          <label className="text-sm font-bold block mb-2">اختر التاريخ</label>
+          <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="custom-input p-3 rounded-xl w-full text-center" />
+        </div>
+        <div className="space-y-3 mb-6">
+          {safePharmacies.length === 0 ? <p className="text-center py-4 text-slate-500">لا توجد صيدليات</p> :
+            safePharmacies.map(p => (
+              <div key={p.id} onClick={() => togglePharmacy(p.id)}
+                   className={`glass-panel p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:border-indigo-300 transition ${selectedPharmacies.includes(p.id) ? 'border-2 border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedPharmacies.includes(p.id) ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300'}`}>
+                  {selectedPharmacies.includes(p.id) && <CheckCircle2 size={14} className="text-white" />}
+                </div>
+                <div className="text-right">
+                  <h4 className="font-bold">{p.name || 'بدون اسم'}</h4>
+                  <p className="text-xs text-slate-500">{p.address || '---'}</p>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+        <button onClick={saveDuty} disabled={loading} className="w-full bg-indigo-500 text-white font-bold p-3 rounded-xl hover:bg-indigo-600 disabled:opacity-50 flex justify-center gap-2">
+          {loading ? <Loader2 className="animate-spin" /> : 'حفظ المناوبات لهذا اليوم'}
+        </button>
+      </div>
+    );
+  }
+
+  // ======================== BroadcastView ========================
+  function BroadcastView({ donors = [], showNotification, confirmAction }) {
+    const [title, setTitle] = useState('');
+    const [body, setBody] = useState('');
+    const [target, setTarget] = useState('all');
+    const [selectedBloodType, setSelectedBloodType] = useState('');
+    const [loading, setLoading] = useState(false);
+    const safeDonors = Array.isArray(donors) ? donors : [];
+    const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+
+    const targetDonors = useMemo(() => {
+      if (target === 'all') return safeDonors;
+      return safeDonors.filter(d => d.bloodType === selectedBloodType);
+    }, [safeDonors, target, selectedBloodType]);
+
+    const handleBroadcast = async (e) => {
+      e.preventDefault();
+      if (!title.trim() || !body.trim()) { showNotification('error', 'أدخل العنوان والنص'); return; }
+      if (target === 'specific' && !selectedBloodType) { showNotification('error', 'اختر فصيلة الدم'); return; }
+      confirmAction("تأكيد الإرسال", `إرسال إلى ${targetDonors.length} متبرع${target !== 'all' ? ` (فصيلة ${selectedBloodType})` : ''}؟`, "نعم، أرسل", async () => {
+        setLoading(true);
+        try {
+          const promises = targetDonors.map(d => addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
+            toUserId: d.id, fromUserId: 'ADMIN', title: title.trim(), body: body.trim(), type: 'global', read: false, createdAt: serverTimestamp()
+          }));
+          await Promise.all(promises);
+          showNotification('success', 'تم الإرسال');
+          setTitle(''); setBody('');
+        } catch { showNotification('error', 'فشل الإرسال'); }
+        finally { setLoading(false); }
+      }, false);
+    };
+
+    return (
+      <div className="animate-fadeIn px-4 md:px-6 pb-6">
+        <h2 className="text-xl font-black text-slate-800 dark:text-white mb-6"><Send className="inline ml-2 text-indigo-500"/> الإعلانات الجماعية</h2>
+        <div className="glass-panel p-5 rounded-3xl mb-6">
+          <form onSubmit={handleBroadcast} className="flex flex-col gap-4">
+            <div>
+              <label className="text-sm font-bold block mb-2">المستهدفون</label>
+              <select value={target} onChange={e => setTarget(e.target.value)} className="custom-input w-full p-3 rounded-xl text-center">
+                <option value="all">جميع المتبرعين</option>
+                <option value="specific">فصيلة دم محددة</option>
+              </select>
+            </div>
+            {target === 'specific' && (
+              <div>
+                <label className="text-sm font-bold block mb-2">اختر الفصيلة</label>
+                <select value={selectedBloodType} onChange={e => setSelectedBloodType(e.target.value)} className="custom-input w-full p-3 rounded-xl text-center">
+                  <option value="">-- اختر --</option>
+                  {bloodTypes.map(bt => <option key={bt} value={bt}>{bt}</option>)}
+                </select>
+              </div>
+            )}
+            <input type="text" placeholder="عنوان الإشعار" value={title} onChange={e => setTitle(e.target.value)} className="custom-input p-3 rounded-xl" required />
+            <textarea placeholder="نص الإشعار" value={body} onChange={e => setBody(e.target.value)} className="custom-input p-4 rounded-xl h-28 resize-none" required></textarea>
+            <button type="submit" disabled={loading || (target === 'specific' && !selectedBloodType)} className="w-full bg-indigo-500 text-white p-3 rounded-xl font-bold disabled:opacity-50 flex justify-center gap-2">
+              {loading ? <Loader2 className="animate-spin" /> : <><Send size={16} /> إرسال إلى {targetDonors.length} متبرع</>}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // ======================== NotificationsLogView (مع الرد على الإشعارات) ========================
+  function NotificationsLogView({ notifications = [], donors = [], showNotification }) {
+    const [replyTo, setReplyTo] = useState(null);
+    const [replyText, setReplyText] = useState('');
+    const [sendingReply, setSendingReply] = useState(false);
+    const safeNotifications = Array.isArray(notifications) ? notifications : [];
+    const safeDonors = Array.isArray(donors) ? donors : [];
+
+    const grouped = useMemo(() => {
+      const result = []; const seen = new Set();
+      safeNotifications.forEach(n => {
+        if (n.type === 'global') {
+          const key = `${n.title}_${n.body}`;
+          if (!seen.has(key)) { result.push({...n, isGrouped: true}); seen.add(key); }
+        } else result.push(n);
+      });
+      return result;
+    }, [safeNotifications]);
+
+    const handleSendReply = async () => {
+      if (!replyTo || !replyText.trim()) return;
+      setSendingReply(true);
+      try {
+        await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
+          toUserId: replyTo.fromUserId,
+          fromUserId: 'ADMIN',
+          title: 'رد من الإدارة',
+          body: replyText.trim(),
+          type: 'info',
+          read: false,
+          createdAt: serverTimestamp()
+        });
+        showNotification('success', 'تم إرسال الرد');
+        setReplyTo(null);
+        setReplyText('');
+      } catch { showNotification('error', 'فشل الإرسال'); }
+      finally { setSendingReply(false); }
+    };
+
+    return (
+      <div className="animate-fadeIn px-4 md:px-6 pb-6">
+        <h2 className="text-xl font-black text-slate-800 dark:text-white mb-6"><Activity className="inline ml-2 text-indigo-500"/> سجل النشاط</h2>
+        <div className="glass-panel rounded-3xl p-3 max-h-[65vh] overflow-y-auto no-scrollbar">
+          {grouped.length === 0 ? <p className="text-center py-10 text-slate-500">لا يوجد نشاط.</p> :
+            grouped.map(n => {
+              const dateStr = n.createdAt?.toDate ? new Intl.DateTimeFormat('ar-DZ', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }).format(n.createdAt.toDate()) : '';
+              const isGlobal = n.type === 'global'; const isReq = n.type === 'request'; const isReject = n.title?.includes('اعتذار');
+              const fromName = safeDonors.find(d => d.id === n.fromUserId)?.username || (n.fromUserId === 'ADMIN' ? 'الإدارة' : 'مجهول');
+              const toName = safeDonors.find(d => d.id === n.toUserId)?.username || 'مجهول';
+              let icon = <Info size={16} className="text-blue-500"/>; let bg = 'bg-blue-50 border-blue-100'; let badge = null;
+              if (isGlobal) { icon = <Bell size={16} className="text-purple-500"/>; bg = 'bg-purple-50 border-purple-100'; badge = <span className="bg-purple-500 text-white text-[10px] px-2 py-0.5 rounded-full">إعلان</span>; }
+              else if (isReq) { icon = <Droplet size={16} className="text-orange-500"/>; bg = 'bg-orange-50 border-orange-100'; badge = <span className="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full">طلب تبرع</span>; }
+              else if (isReject) { icon = <XCircle size={16} className="text-slate-500"/>; bg = 'bg-slate-100 border-slate-200'; badge = <span className="bg-slate-500 text-white text-[10px] px-2 py-0.5 rounded-full">اعتذار</span>; }
+
+              return (
+                <div key={n.id} className={`${bg} p-4 mb-3 border rounded-2xl text-right`}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-slate-400">{dateStr}</span>
+                    <div className="flex items-center gap-2">{badge}<div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">{icon}</div></div>
+                  </div>
+                  {!isGlobal && (
+                    <div className="bg-white/50 p-2 rounded-xl mt-2 flex items-center justify-between">
+                      <div className="text-center"><span className="text-[9px] text-slate-400">المستقبل</span><p className="text-xs font-black">{toName}</p></div>
+                      <ArrowLeft size={14} className="text-slate-300"/>
+                      <div className="text-center"><span className="text-[9px] text-slate-400">المرسل</span><p className="text-xs font-black">{fromName}</p></div>
+                    </div>
+                  )}
+                  <div className="mt-2">
+                    <h4 className="font-bold text-sm">{n.title || 'بدون عنوان'}</h4>
+                    <p className="text-xs text-slate-600 mt-1 whitespace-pre-line">{n.body || ''}</p>
+                  </div>
+                  {!isGlobal && n.fromUserId !== 'ADMIN' && (
+                    <div className="mt-2 flex justify-end">
+                      <button onClick={() => setReplyTo(n)} className="text-xs bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-indigo-200">
+                        <Reply size={12} /> رد
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          }
+        </div>
+        {replyTo && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="glass-panel w-full max-w-md p-6 rounded-2xl">
+              <h3 className="font-bold text-lg mb-2">رد على {safeDonors.find(d => d.id === replyTo.fromUserId)?.username || 'مستخدم'}</h3>
+              <textarea value={replyText} onChange={e => setReplyText(e.target.value)} className="custom-input w-full p-3 rounded-xl h-24 resize-none" placeholder="اكتب ردك..."></textarea>
+              <div className="flex gap-2 mt-4">
+                <button onClick={() => { setReplyTo(null); setReplyText(''); }} className="flex-1 py-2 bg-slate-100 rounded-xl">إلغاء</button>
+                <button onClick={handleSendReply} disabled={sendingReply} className="flex-1 py-2 bg-indigo-500 text-white rounded-xl flex justify-center items-center gap-2">
+                  {sendingReply ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />} إرسال الرد
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ======================== DonorsManager ========================
+  function DonorsManager({ donors = [], showNotification, confirmAction }) {
+    const safeDonors = Array.isArray(donors) ? donors : [];
+    const handleDelete = (id, name) => {
+      confirmAction("حذف متبرع", `هل أنت متأكد من حذف "${name}"؟`, "حذف نهائي", async () => {
+        try { await deleteDoc(doc(db, DONORS_COLLECTION, id)); showNotification('success','تم الحذف'); }
+        catch { showNotification('error','فشل'); }
+      }, true);
+    };
+    return (
+      <div className="animate-fadeIn px-4 md:px-6 pb-6">
+        <h2 className="text-xl font-black mb-4"><Users className="text-indigo-500 inline ml-2"/>المتبرعين</h2>
+        <div className="space-y-3">
+          {safeDonors.length===0 ? <p className="text-center py-10 text-slate-500">لا يوجد متبرعين.</p> :
+            safeDonors.map(donor=>(
+              <div key={donor.id} className="glass-panel p-4 rounded-2xl flex justify-between items-center">
+                <button onClick={()=>handleDelete(donor.id, donor.username||'متبرع')} className="p-2 bg-red-50 text-red-500 rounded-lg"><Trash2 size={16}/></button>
+                <div className="text-right overflow-hidden pr-3">
+                  <h4 className="font-bold text-sm flex items-center justify-end gap-1">{donor.username||'متبرع'}<span className="bg-indigo-100 text-indigo-600 text-[10px] px-2 py-0.5 rounded-md" dir="ltr">{donor.bloodType||'-'}</span></h4>
+                  <p className="text-xs text-slate-500 mt-1">{donor.neighborhood||'بدون حي'} | <span dir="ltr">{donor.phone||'بدون رقم'}</span></p>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    );
+  }
+
+  // ======================== MedicinesManager ========================
+  function MedicinesManager({ medicines = [], showNotification, confirmAction }) {
+    const safeMeds = Array.isArray(medicines) ? medicines : [];
+    const toggleApprove = async (id, current) => {
+      try {
+        await updateDoc(doc(db, MEDICINES_COLLECTION, id), { approved: !current, updatedAt: serverTimestamp() });
+        showNotification('success', !current?'تم النشر':'تم الإخفاء');
+      } catch { showNotification('error','فشل'); }
+    };
+    const handleDelete = (id, name) => {
+      confirmAction("حذف طلب", `حذف "${name}"؟`, "حذف", async () => {
+        try { await deleteDoc(doc(db, MEDICINES_COLLECTION, id)); showNotification('success','تم الحذف'); }
+        catch { showNotification('error','فشل'); }
+      }, true);
+    };
+    return (
+      <div className="animate-fadeIn px-4 md:px-6 pb-6">
+        <h2 className="text-xl font-black mb-4"><Pill className="text-orange-500 inline ml-2"/>طلبات الأدوية</h2>
+        <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-100 p-3 rounded-xl mb-4 text-xs">الطلبات الجديدة مخفية حتى تتم الموافقة عليها.</div>
+        <div className="space-y-4">
+          {safeMeds.length===0 ? <p className="text-center py-10 text-slate-500">لا توجد طلبات.</p> :
+            safeMeds.map(med=>(
+              <div key={med.id} className={`glass-panel p-4 rounded-2xl border-t-4 ${med.approved?'border-emerald-500':'border-orange-500'}`}>
+                <div className="flex justify-between items-start">
+                  <button onClick={()=>handleDelete(med.id, med.medicineName||'دواء')} className="p-1.5 bg-slate-100 text-slate-500 hover:text-red-500 rounded-lg"><Trash2 size={16}/></button>
+                  <div className="text-right">
+                    <h4 className="font-bold">{med.medicineName||'دواء'}</h4>
+                    <p className="text-[10px] text-slate-500 mt-1">الكمية: {med.quantity} | الطالب: {med.requesterName} ({med.requesterPhone})</p>
+                  </div>
+                </div>
+                <button onClick={()=>toggleApprove(med.id, med.approved)} className={`w-full mt-2 py-2 rounded-xl text-xs font-bold ${med.approved?'bg-emerald-100 text-emerald-700 border':'bg-orange-500 text-white'}`}>{med.approved?'معروض، انقر للإخفاء':'قبول ونشر الطلب'}</button>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    );
+  }
+
+  // ======================== ReportsManager ========================
+  function ReportsManager({ reports = [], showNotification, confirmAction }) {
+    const safeReports = Array.isArray(reports) ? reports : [];
+    const handleDelete = (id) => {
+      confirmAction("حذف البلاغ", "هل تريد حذف البلاغ؟", "حذف", async () => {
+        try { await deleteDoc(doc(db, REPORTS_COLLECTION, id)); showNotification('success','تم الحذف'); }
+        catch { showNotification('error','فشل'); }
+      }, true);
+    };
+    return (
+      <div className="animate-fadeIn px-4 md:px-6 pb-6">
+        <h2 className="text-xl font-black mb-4"><ShieldAlert className="text-red-500 inline ml-2"/>البلاغات</h2>
+        <div className="space-y-3">
+          {safeReports.length===0 ? <p className="text-center py-10 text-slate-500">لا توجد بلاغات.</p> :
+            safeReports.map(report=>{
+              const dateStr = report.createdAt?.toDate ? new Intl.DateTimeFormat('ar-DZ',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(report.createdAt.toDate()):'';
+              return (
+                <div key={report.id} className="bg-red-50 dark:bg-red-950/30 border border-red-100 p-4 rounded-2xl text-right relative">
+                  <button onClick={()=>handleDelete(report.id)} className="absolute top-4 left-4 p-1.5 bg-white text-slate-500 hover:text-red-500 rounded-lg"><CheckCircle2 size={16}/></button>
+                  <h4 className="font-bold text-red-800 text-sm">المُبلغ عنه: {report.reportedDonorName||'غير معروف'}</h4>
+                  <p className="text-red-600 text-xs font-bold mt-1">السبب: {report.reason||'غير محدد'}</p>
+                  <span className="text-[10px] text-red-400">{dateStr}</span>
+                </div>
+              );
+            })
+          }
+        </div>
+      </div>
+    );
+  }
+
+  // ======================== RequestsView (مع الرد على الطلبات) ========================
+  function RequestsView({ adminRequests = [], showNotification, confirmAction }) {
+    const safeRequests = Array.isArray(adminRequests) ? adminRequests : [];
+    const [replyTo, setReplyTo] = useState(null);
+    const [replyText, setReplyText] = useState('');
+    const [sendingReply, setSendingReply] = useState(false);
+
+    const handleDelete = (id) => {
+      confirmAction("حذف الطلب", "هل أنت متأكد من حذف هذا الطلب؟", "حذف", async () => {
+        try { await deleteDoc(doc(db, ADMIN_REQUESTS_COLLECTION, id)); showNotification('success', 'تم الحذف'); }
+        catch { showNotification('error', 'فشل'); }
+      }, true);
+    };
+
+    const handleSendReply = async () => {
+      if (!replyTo || !replyText.trim()) return;
+      setSendingReply(true);
+      try {
+        await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
+          toUserId: replyTo.fromUserId,
+          fromUserId: 'ADMIN',
+          title: 'رد من الإدارة',
+          body: replyText.trim(),
+          type: 'info',
+          read: false,
+          createdAt: serverTimestamp()
+        });
+        showNotification('success', 'تم إرسال الرد');
+        setReplyTo(null);
+        setReplyText('');
+      } catch { showNotification('error', 'فشل إرسال الرد'); }
+      finally { setSendingReply(false); }
+    };
+
+    return (
+      <div className="animate-fadeIn px-4 md:px-6 pb-6">
+        <h2 className="text-xl font-black text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+          <MessageSquare className="text-blue-500" /> الطلبات والرسائل الواردة
+        </h2>
+        <div className="space-y-4">
+          {safeRequests.length === 0 ? (
+            <p className="text-center text-slate-500 py-10">لا توجد طلبات واردة حالياً.</p>
+          ) : (
+            safeRequests.map(req => {
+              const dateStr = req.createdAt?.toDate
+                ? new Intl.DateTimeFormat('ar-DZ', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }).format(req.createdAt.toDate())
+                : '';
+              const isBlood = req.type === 'blood_request';
+              return (
+                <div key={req.id} className={`glass-panel p-4 rounded-2xl relative border-t-4 ${isBlood ? 'border-red-500' : 'border-indigo-500'}`}>
+                  <button onClick={() => handleDelete(req.id)} className="absolute top-4 left-4 p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-500 rounded-lg transition">
+                    <Trash2 size={16} />
+                  </button>
+                  <div className="text-right pr-10">
+                    <div className="flex items-center justify-end gap-2 mb-1">
+                      <span className={`text-xs font-black px-2 py-0.5 rounded-full ${isBlood ? 'bg-red-100 text-red-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                        {isBlood ? 'طلب تبرع' : 'رسالة خاصة'}
+                      </span>
+                      <h4 className="font-bold text-slate-800 dark:text-white">{req.fromUserName || 'مستخدم'}</h4>
+                    </div>
+                    <p className="text-xs text-slate-500 mb-2" dir="ltr">{req.fromUserPhone || ''}</p>
+                    {isBlood ? (
+                      <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-xl text-xs space-y-1">
+                        <p><span className="font-bold">فصيلة الدم:</span> {req.bloodType}</p>
+                        <p><span className="font-bold">مكان التبرع:</span> {req.donationPlace}</p>
+                      </div>
+                    ) : (
+                      <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-xl text-xs">
+                        <p className="whitespace-pre-line">{req.message}</p>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-slate-400 mt-2">{dateStr}</p>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={() => setReplyTo(req)}
+                        className="text-xs bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-indigo-200"
+                      >
+                        <Reply size={12} /> رد
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+        {replyTo && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="glass-panel w-full max-w-md p-6 rounded-2xl">
+              <h3 className="font-bold text-lg mb-2">
+                رد على {replyTo.fromUserName || 'مستخدم'}
+              </h3>
+              <textarea
+                value={replyText}
+                onChange={e => setReplyText(e.target.value)}
+                className="custom-input w-full p-3 rounded-xl h-24 resize-none"
+                placeholder="اكتب ردك..."
+              ></textarea>
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => { setReplyTo(null); setReplyText(''); }}
+                  className="flex-1 py-2 bg-slate-100 rounded-xl"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={handleSendReply}
+                  disabled={sendingReply}
+                  className="flex-1 py-2 bg-indigo-500 text-white rounded-xl flex justify-center items-center gap-2"
+                >
+                  {sendingReply ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
+                  إرسال الرد
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ======================== DoctorsManager ========================
+  function DoctorsManager({ doctors = [], showNotification, confirmAction }) {
+    const [editingId, setEditingId] = useState(null);
+    const [name, setName] = useState(''); const [specialty, setSpecialty] = useState('');
+    const [address, setAddress] = useState(''); const [mapLink, setMapLink] = useState('');
+    const [phone, setPhone] = useState(''); const [loading, setLoading] = useState(false);
+    const safeDoctors = Array.isArray(doctors) ? doctors : [];
+
+    const resetForm = () => { setEditingId(null); setName(''); setSpecialty(''); setAddress(''); setMapLink(''); setPhone(''); };
+    const handleEditClick = (doc) => {
+      setEditingId(doc.id); setName(doc.name||''); setSpecialty(doc.specialty||''); setAddress(doc.address||'');
+      setMapLink(doc.mapLink||''); setPhone(doc.phone||''); window.scrollTo({top:0,behavior:'smooth'});
+    };
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      if(!name.trim()||!specialty.trim()||!address.trim()){ showNotification('error','أدخل البيانات'); return; }
+      setLoading(true);
+      try {
+        const data = { name:name.trim(), specialty:specialty.trim(), address:address.trim(), mapLink:mapLink.trim(), phone:phone.trim(), updatedAt:serverTimestamp() };
+        if(editingId){ await updateDoc(doc(db,DOCTORS_COLLECTION,editingId), data); showNotification('success','تم التعديل'); }
+        else { data.ratings={}; data.createdAt=serverTimestamp(); await addDoc(collection(db,DOCTORS_COLLECTION), data); showNotification('success','تمت الإضافة'); }
+        resetForm();
+      } catch { showNotification('error','فشل'); }
+      finally { setLoading(false); }
+    };
+    const deleteDoctor = (id, name) => {
+      confirmAction("حذف طبيب",`حذف "${name}"؟`,"حذف", async () => {
+        try { await deleteDoc(doc(db,DOCTORS_COLLECTION,id)); showNotification('success','تم الحذف'); }
+        catch { showNotification('error','فشل'); }
+      }, true);
+    };
+
+    return (
+      <div className="animate-fadeIn px-4 md:px-6 pb-6">
+        <h2 className="text-xl font-black mb-6"><HeartPulse className="text-blue-500 inline ml-2"/>إدارة الأطباء</h2>
+        <form onSubmit={handleSubmit} className="glass-panel p-5 rounded-3xl mb-8 flex flex-col gap-4">
+          <div className="flex justify-between">{editingId&&<button type="button" onClick={resetForm} className="text-xs bg-slate-100 px-3 py-1 rounded-lg">إلغاء</button>}<h3 className="font-bold text-blue-600 flex items-center gap-2"><Plus size={18}/>{editingId?'تعديل':'إضافة جديد'}</h3></div>
+          <input type="text" placeholder="اسم الطبيب" value={name} onChange={e=>setName(e.target.value)} className="custom-input p-3 rounded-xl" required/>
+          <input type="text" placeholder="الاختصاص" value={specialty} onChange={e=>setSpecialty(e.target.value)} className="custom-input p-3 rounded-xl" required/>
+          <input type="text" placeholder="العنوان" value={address} onChange={e=>setAddress(e.target.value)} className="custom-input p-3 rounded-xl" required/>
+          <input type="tel" placeholder="رقم الهاتف" value={phone} onChange={e=>setPhone(e.target.value)} className="custom-input p-3 rounded-xl" dir="ltr"/>
+          <input type="url" placeholder="رابط الخريطة" value={mapLink} onChange={e=>setMapLink(e.target.value)} className="custom-input p-3 rounded-xl" dir="ltr"/>
+          <button type="submit" disabled={loading} className="bg-blue-500 text-white p-3 rounded-xl font-bold disabled:opacity-50 flex justify-center gap-2">{loading?<Loader2 className="animate-spin"/>:editingId?<><Edit size={16}/>تحديث</>:'حفظ'}</button>
+        </form>
+        <div className="space-y-3">
+          {safeDoctors.length===0 ? <p className="text-center py-10 text-slate-500">لا يوجد أطباء.</p> :
+            safeDoctors.map(doc=>{
+              const {average,count}=getRatingInfo(doc);
+              return (
+                <div key={doc.id} className="glass-panel p-4 rounded-2xl flex justify-between items-start">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <button onClick={()=>deleteDoctor(doc.id, doc.name||'طبيب')} className="p-2 bg-red-50 text-red-500 rounded-lg"><Trash2 size={16}/></button>
+                      <button onClick={()=>handleEditClick(doc)} className="p-2 bg-blue-50 text-blue-500 rounded-lg"><Edit size={16}/></button>
+                    </div>
+                    {doc.mapLink&&<a href={doc.mapLink} target="_blank" className="p-2 bg-blue-50 text-blue-500 rounded-lg text-xs flex items-center gap-1"><Map size={14}/>الخريطة</a>}
+                  </div>
+                  <div className="text-right flex-1 pr-2">
+                    <h4 className="font-black">{doc.name||'بدون اسم'}</h4>
+                    <p className="text-xs text-blue-500 mt-1">{doc.specialty||'---'}</p>
+                    <p className="text-xs text-slate-500"><MapPin size={10}/> {doc.address||'---'}</p>
+                    {doc.phone&&<p className="text-xs" dir="ltr"><Phone size={10}/> {doc.phone}</p>}
+                    <div className="mt-1 flex items-center justify-end gap-1 text-yellow-500 text-xs"><Star size={12} fill="currentColor"/><span dir="ltr">{average?average.toFixed(1):'0.0'} /5</span><span className="text-slate-400">({count})</span></div>
+                  </div>
+                </div>
+              );
+            })
+          }
+        </div>
+      </div>
+    );
+  }
+
+  // ======================== AdminApp ========================
+  function AdminApp() {
+    const [user, setUser] = useState(null);
+    const [view, setView] = useState('dashboard');
+    const [donors, setDonors] = useState([]);
+    const [pharmacies, setPharmacies] = useState([]);
+    const [doctors, setDoctors] = useState([]);
+    const [medicines, setMedicines] = useState([]);
+    const [reports, setReports] = useState([]);
+    const [notificationsLog, setNotificationsLog] = useState([]);
+    const [adminRequests, setAdminRequests] = useState([]);
+    const [notificationToast, setNotificationToast] = useState(null);
+    const [modalConfig, setModalConfig] = useState({ isOpen: false });
+    const [initializing, setInitializing] = useState(true);
+    const [isDark, setIsDark] = useState(() => localStorage.getItem('theme_admin') === 'dark');
+
+    useEffect(() => {
+      document.documentElement.classList.toggle('dark', isDark);
+      localStorage.setItem('theme_admin', isDark ? 'dark' : 'light');
+    }, [isDark]);
+    const toggleTheme = () => setIsDark(!isDark);
+
+    useEffect(() => {
+      const unsubscribe = onAuthStateChanged(auth, currentUser => { setUser(currentUser); if(initializing) setInitializing(false); });
+      return () => unsubscribe();
+    }, [initializing]);
+
+    useEffect(() => {
+      if (!user) return;
+      const unsubDonors = onSnapshot(collection(db, DONORS_COLLECTION), snap => setDonors(snap.docs.map(d=>({id:d.id,...d.data()}))));
+      const unsubPharm = onSnapshot(collection(db, PHARMACIES_COLLECTION), snap => setPharmacies(snap.docs.map(d=>({id:d.id,...d.data()}))));
+      const unsubDoc = onSnapshot(collection(db, DOCTORS_COLLECTION), snap => setDoctors(sortDoctorsList(snap.docs.map(d=>({id:d.id,...d.data()})))));
+      const unsubMed = onSnapshot(collection(db, MEDICINES_COLLECTION), snap => setMedicines(snap.docs.map(d=>({id:d.id,...d.data()}))));
+      const unsubRep = onSnapshot(collection(db, REPORTS_COLLECTION), snap => setReports(snap.docs.map(d=>({id:d.id,...d.data()}))));
+      const unsubNotif = onSnapshot(query(collection(db, NOTIFICATIONS_COLLECTION), orderBy('createdAt','desc')), snap => setNotificationsLog(snap.docs.map(d=>({id:d.id,...d.data()}))));
+      const unsubRequests = onSnapshot(query(collection(db, ADMIN_REQUESTS_COLLECTION), orderBy('createdAt','desc')), snap => setAdminRequests(snap.docs.map(d=>({id:d.id,...d.data()}))));
+      return () => { unsubDonors(); unsubPharm(); unsubDoc(); unsubMed(); unsubRep(); unsubNotif(); unsubRequests(); };
+    }, [user]);
+
+    const showNotification = (type, msg) => { setNotificationToast({type,msg}); setTimeout(()=>setNotificationToast(null),3000); };
+    const closeConfirm = () => setModalConfig(p=>({...p,isOpen:false}));
+    const confirmAction = (title, message, confirmText, action, isDestructive=false) => { setModalConfig({isOpen:true, title, message, confirmText, isDestructive, action: ()=>{ action(); closeConfirm(); }}); };
+
+    if (initializing) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-indigo-500" size={48}/></div>;
+    if (!user) {
+      const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, e.target.email.value.trim(), e.target.password.value); } catch { alert('بيانات الدخول غير صحيحة'); } };
+      return (
+        <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-[#020617] relative">
+          <button onClick={toggleTheme} className="absolute top-6 left-6 w-10 h-10 glass-panel rounded-full flex items-center justify-center">{isDark?<Sun size={20}/>:<Moon size={20}/>}</button>
+          <form onSubmit={handleLogin} className="glass-panel p-8 rounded-[2rem] w-full max-w-sm flex flex-col gap-4">
+            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto"><Lock size={32} className="text-indigo-600"/></div>
+            <h2 className="text-2xl font-black text-center">دخول الإدارة</h2>
+            <input name="email" type="email" placeholder="البريد الإلكتروني" className="custom-input p-4 rounded-xl text-center" required/>
+            <input name="password" type="password" placeholder="كلمة المرور" className="custom-input p-4 rounded-xl text-center" required/>
+            <button className="bg-indigo-500 text-white font-bold p-4 rounded-xl mt-2 hover:bg-indigo-600">تسجيل الدخول</button>
+          </form>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen pb-24 relative">
+        <AdminHeader isDark={isDark} toggleTheme={toggleTheme} view={view} setView={setView} />
+        <div className="w-full max-w-2xl mx-auto">
+          {view === 'dashboard' && <DashboardView donors={donors} pharmacies={pharmacies} doctors={doctors} medicines={medicines} reports={reports} adminRequests={adminRequests} setView={setView} />}
+          {view === 'pharmacies' && <PharmaciesManager pharmacies={pharmacies} showNotification={showNotification} confirmAction={confirmAction} />}
+          {view === 'duty' && <DutyManager pharmacies={pharmacies} showNotification={showNotification} />}
+          {view === 'doctors' && <DoctorsManager doctors={doctors} showNotification={showNotification} confirmAction={confirmAction} />}
+          {view === 'requests' && <RequestsView adminRequests={adminRequests} showNotification={showNotification} confirmAction={confirmAction} />}
+          {view === 'notifications' && <NotificationsLogView notifications={notificationsLog} donors={donors} showNotification={showNotification} />}
+          {view === 'broadcast' && <BroadcastView donors={donors} showNotification={showNotification} confirmAction={confirmAction} />}
+          {view === 'donors' && <DonorsManager donors={donors} showNotification={showNotification} confirmAction={confirmAction} />}
+          {view === 'medicines' && <MedicinesManager medicines={medicines} showNotification={showNotification} confirmAction={confirmAction} />}
+          {view === 'reports' && <ReportsManager reports={reports} showNotification={showNotification} confirmAction={confirmAction} />}
+        </div>
+        <AdminBottomNav view={view} setView={setView} />
+        <Toast notification={notificationToast} />
+        <CustomModal isOpen={modalConfig.isOpen} title={modalConfig.title} message={modalConfig.message} isDestructive={modalConfig.isDestructive} confirmText={modalConfig.confirmText} onCancel={closeConfirm} onConfirm={modalConfig.action} />
+      </div>
+    );
+  }
+
+  const root = createRoot(document.getElementById('root'));
+  root.render(<AdminApp />);
+</script>
+</body>
+</html>
