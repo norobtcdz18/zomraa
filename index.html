@@ -1924,17 +1924,23 @@ function HomeView({
         day: 'numeric'
       }).format(new Date());
 
-      const onDutyPharmacies = useMemo(() => {
+      const displayPharmacies = useMemo(() => {
         const safePharmacies = Array.isArray(pharmacies) ? pharmacies : [];
 
-        return safePharmacies
-          .filter(pharmacy => {
-            const hasTodayDuty =
-              Array.isArray(pharmacy.dutyDates) &&
-              pharmacy.dutyDates.includes(todayStr);
+        // 1. نبحث أولاً عن الصيدليات التي لديها مناوبة اليوم
+        const pharmaciesWithDutyToday = safePharmacies.filter(pharmacy =>
+          Array.isArray(pharmacy.dutyDates) &&
+          pharmacy.dutyDates.includes(todayStr)
+        );
 
-            return hasTodayDuty && isNowWithinPharmacyHours(pharmacy);
-          })
+        // 2. إذا وجدنا صيدليات مناوبة اليوم، نعرضها هي فقط. وإذا لم نجد، نعرض جميع الصيدليات
+        const targetList = pharmaciesWithDutyToday.length > 0 
+          ? pharmaciesWithDutyToday 
+          : safePharmacies;
+
+        // 3. أخيراً، نصفي القائمة حسب أوقات العمل الحالية ونرتبها أبجدياً
+        return targetList
+          .filter(pharmacy => isNowWithinPharmacyHours(pharmacy))
           .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
       }, [pharmacies, todayStr]);
 
@@ -1953,7 +1959,7 @@ function HomeView({
 
           <div className="px-6 mb-6 mt-4 text-center">
             <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-1">
-              الصيدليات المناوبة
+              الصيدليات المتاحة
             </h2>
 
             <p className="text-emerald-600 dark:text-brand-accent font-bold text-sm">
@@ -1961,12 +1967,12 @@ function HomeView({
             </p>
 
             <p className="text-slate-400 dark:text-slate-500 text-xs mt-2">
-              تظهر فقط الصيدليات التي تم تحديد تاريخ مناوبتها لهذا اليوم من لوحة الإدارة.
+              تظهر الصيدليات المناوبة اليوم. في حال عدم وجود مناوبة، تظهر جميع الصيدليات المفتوحة الآن.
             </p>
           </div>
 
           <div className="px-2 sm:px-6">
-            {onDutyPharmacies.length === 0 ? (
+            {displayPharmacies.length === 0 ? (
               <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800">
                 <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center opacity-70">
                   <Stethoscope
@@ -1976,15 +1982,15 @@ function HomeView({
                 </div>
 
                 <p className="text-slate-600 dark:text-slate-300 font-bold">
-                  لا توجد صيدليات مناوبة حالياً
+                  لا توجد صيدليات مفتوحة حالياً
                 </p>
 
                 <p className="text-slate-400 dark:text-slate-500 text-sm mt-2 px-4">
-                  إما لم يتم تحديد صيدلية مناوبة لهذا اليوم، أو انتهى وقت المناوبة المحدد من الإدارة.
+                  جميع الصيدليات مغلقة في هذا الوقت حسب أوقات العمل المسجلة.
                 </p>
               </div>
             ) : (
-              onDutyPharmacies.map(pharmacy => (
+              displayPharmacies.map(pharmacy => (
                 <PharmacyCard
                   key={pharmacy.id}
                   pharmacy={pharmacy}
