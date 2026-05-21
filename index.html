@@ -2,28 +2,39 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  >
+
   <title>Zomraa v2 - قطرة حياة</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+
   <script>
-    tailwind.config = { 
-      darkMode: 'class', 
-      theme: { 
-        extend: { 
-          fontFamily: { sans: ['Cairo', 'sans-serif'] }, 
-          colors: { 
-            brand: { 
-              accent: '#CDEB57', 
-              accentHover: '#b9d64a' 
-            } 
-          } 
-        } 
-      } 
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Cairo', 'sans-serif']
+          },
+          colors: {
+            brand: {
+              accent: '#CDEB57',
+              accentHover: '#b9d64a'
+            }
+          }
+        }
+      }
     }
   </script>
 
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap"
+    rel="stylesheet"
+  >
 
   <script type="importmap">
     {
@@ -230,24 +241,31 @@
     const DONORS_COLLECTION = "donors";
     const MEDICINES_COLLECTION = "medicines";
     const PHARMACIES_COLLECTION = "pharmacies";
+    const DOCTORS_COLLECTION = "doctors";
     const REPORTS_COLLECTION = "reports";
     const NOTIFICATIONS_COLLECTION = "notifications";
     const MAIL_COLLECTION = "mail";
+
     const COOLDOWN_DAYS = 90;
 
     function getLocalDateString(date = new Date()) {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
+
       return `${year}-${month}-${day}`;
     }
 
     function timeToMinutes(time) {
-      if (!time || typeof time !== 'string' || !time.includes(':')) return null;
+      if (!time || typeof time !== 'string' || !time.includes(':')) {
+        return null;
+      }
 
       const [hours, minutes] = time.split(':').map(Number);
 
-      if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+      if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+        return null;
+      }
 
       return hours * 60 + minutes;
     }
@@ -256,7 +274,9 @@
       const openMinutes = timeToMinutes(pharmacy.openTime || '08:00');
       const closeMinutes = timeToMinutes(pharmacy.closeTime || '22:00');
 
-      if (openMinutes === null || closeMinutes === null) return true;
+      if (openMinutes === null || closeMinutes === null) {
+        return true;
+      }
 
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -272,7 +292,42 @@
       return `من ${pharmacy.openTime || '08:00'} إلى ${pharmacy.closeTime || '22:00'}`;
     }
 
-    function BaseModal({ isOpen, onClose, children, hideClose = false }) {
+    function getSafePhone(phone) {
+      if (!phone) return '';
+
+      const phoneString = String(phone).trim();
+
+      if (!phoneString) return '';
+
+      return phoneString.startsWith('0') ? phoneString : `0${phoneString}`;
+    }
+
+    function getAverageDoctorRating(doctor) {
+      const ratings =
+        doctor?.ratings && typeof doctor.ratings === 'object'
+          ? doctor.ratings
+          : {};
+
+      const ratingValues = Object.values(ratings)
+        .map(Number)
+        .filter(value => !Number.isNaN(value) && value >= 1 && value <= 5);
+
+      if (ratingValues.length === 0) {
+        return {
+          average: Number(doctor?.rating || 0),
+          count: Number(doctor?.ratingCount || 0)
+        };
+      }
+
+      const sum = ratingValues.reduce((total, value) => total + value, 0);
+
+      return {
+        average: sum / ratingValues.length,
+        count: ratingValues.length
+      };
+    }
+    
+function BaseModal({ isOpen, onClose, children, hideClose = false }) {
       if (!isOpen) return null;
 
       return (
@@ -401,11 +456,12 @@
         setLoading(true);
 
         try {
-          await sendPasswordResetEmail(auth, email);
-          showNotification('success', 'تم إرسال الرابط.');
+          await sendPasswordResetEmail(auth, email.trim());
+          showNotification('success', 'تم إرسال رابط استعادة كلمة المرور.');
           onClose();
+          setEmail('');
         } catch (err) {
-          showNotification('error', 'البريد غير صحيح.');
+          showNotification('error', 'تعذر إرسال الرابط. تأكد من البريد الإلكتروني.');
         } finally {
           setLoading(false);
         }
@@ -422,7 +478,7 @@
           </h3>
 
           <p className="text-slate-500 dark:text-slate-400 text-center mb-6 text-sm">
-            أدخل بريدك المسجل لدينا.
+            أدخل بريدك الإلكتروني وسنرسل لك رابط استعادة كلمة المرور.
           </p>
 
           <form onSubmit={handleReset} className="space-y-4">
@@ -468,12 +524,12 @@
             </h2>
 
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-6">
-              Zomraa v2 (2.0.0)
+              Zomraa v2
             </p>
 
             <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 mb-6 border border-slate-100 dark:border-slate-800">
               <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-                تطبيق خيري وطبي متكامل، يهدف لربط المتبرعين بالمحتاجين، وتوفير الأدوية المفقودة بسهولة.
+                تطبيق خيري وطبي متكامل يربط المتبرعين بالمحتاجين، ويعرض الصيدليات المناوبة، والأطباء، وطلبات الأدوية.
               </p>
             </div>
 
@@ -490,8 +546,8 @@
         </BaseModal>
       );
     }
-    
-function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
+
+    function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
       const [reason, setReason] = useState('');
       const [loading, setLoading] = useState(false);
 
@@ -501,6 +557,7 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
         setLoading(true);
         await onConfirm(reason);
         setLoading(false);
+        setReason('');
       };
 
       return (
@@ -574,7 +631,8 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
 
       const handleCopyText = (e, text) => {
         e.stopPropagation();
-        navigator.clipboard.writeText(text);
+
+        navigator.clipboard.writeText(text || '');
         showNotification('success', 'تم نسخ النص');
       };
 
@@ -602,7 +660,7 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
               <EmptyState
                 icon={Bell}
                 title="لا توجد إشعارات حالياً"
-                desc="عندما يطلب أحدهم تبرعك، سيظهر لك إشعار هنا."
+                desc="عندما يصلك طلب أو إعلان سيظهر هنا."
               />
             ) : (
               <div className="space-y-3">
@@ -616,12 +674,7 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
                       }).format(notif.createdAt.toDate())
                     : 'الآن';
 
-                  const callerPhone = notif.fromUserPhone
-                    ? String(notif.fromUserPhone).startsWith('0')
-                      ? notif.fromUserPhone
-                      : `0${notif.fromUserPhone}`
-                    : null;
-
+                  const callerPhone = getSafePhone(notif.fromUserPhone);
                   const isRequest = notif.type === 'request';
 
                   return (
@@ -665,7 +718,7 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
                               }}
                               className="flex-1 bg-white dark:bg-slate-900 border border-red-200 text-red-500 p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1"
                             >
-                              اعتذار ❌
+                              اعتذار
                             </button>
                           </div>
                         )}
@@ -706,8 +759,7 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
         </div>
       );
     }
-
-    function AppHeader({
+function AppHeader({
       isDark,
       toggleTheme,
       setView,
@@ -736,7 +788,7 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
 
               <button
                 onClick={toggleTheme}
-                className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 transition"
+                className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
               >
                 <span className="dark:hidden">
                   <Moon size={20} />
@@ -768,7 +820,7 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
 
               <button
                 onClick={() => setShowAbout(true)}
-                className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 transition"
+                className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500 hover:text-emerald-600 dark:hover:text-brand-accent transition"
               >
                 <HelpCircle size={20} />
               </button>
@@ -804,33 +856,56 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
           className={`flex flex-col items-center justify-center gap-1 w-[18%] h-full transition-colors ${
             view === id
               ? 'text-emerald-500 dark:text-brand-accent'
-              : 'text-slate-400 hover:text-slate-600'
+              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
-          <Icon size={22} className={view === id ? "fill-current" : ""} />
-          <span className="text-[10px] font-bold">{text}</span>
+          <Icon
+            size={22}
+            className={view === id ? "fill-current" : ""}
+          />
+
+          <span className="text-[10px] font-bold">
+            {text}
+          </span>
         </button>
       );
 
       return (
         <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-50 pb-[env(safe-area-inset-bottom)]">
           <div className="flex justify-around items-center h-16 relative px-2">
-            <NavBtn id="doctors" icon={HeartPulse} text="أطباء" />
-            <NavBtn id="pharmacy" icon={Stethoscope} text="صيدليات" />
+            <NavBtn
+              id="doctors"
+              icon={HeartPulse}
+              text="أطباء"
+            />
+
+            <NavBtn
+              id="pharmacy"
+              icon={Stethoscope}
+              text="صيدليات"
+            />
 
             <div className="w-[18%]"></div>
 
-            <NavBtn id="medicines" icon={Pill} text="أدوية" />
+            <NavBtn
+              id="medicines"
+              icon={Pill}
+              text="أدوية"
+            />
 
             <button
               onClick={() => user ? setView('profile') : setView('login')}
               className={`flex flex-col items-center justify-center gap-1 w-[18%] h-full transition-colors ${
                 ['profile', 'login', 'register'].includes(view)
                   ? 'text-emerald-500 dark:text-brand-accent'
-                  : 'text-slate-400 hover:text-slate-600'
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
               }`}
             >
-              <User size={22} className={view === 'profile' ? "fill-current" : ""} />
+              <User
+                size={22}
+                className={view === 'profile' ? "fill-current" : ""}
+              />
+
               <span className="text-[10px] font-bold">
                 {user ? 'حسابي' : 'دخول'}
               </span>
@@ -854,8 +929,7 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
         </div>
       );
     }
-
-    function DonorCard({
+function DonorCard({
       donor,
       user,
       onCopyPhone,
@@ -867,15 +941,12 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
 
       const isAvailable = donor.status !== 0;
       const isPhoneHidden = donor.isPhoneHidden === true;
-      const fullPhone = donor.phone
-        ? String(donor.phone).startsWith('0')
-          ? donor.phone
-          : `0${donor.phone}`
-        : '';
+      const fullPhone = getSafePhone(donor.phone);
 
       const safeRaters = Array.isArray(donor.raters) ? donor.raters : [];
       const ratingCount = safeRaters.length;
       const hasRated = user && safeRaters.includes(user.uid);
+
       const [cooldown, setCooldown] = useState(false);
 
       useEffect(() => {
@@ -912,11 +983,11 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
 
             <div className="flex-1 text-right px-4 overflow-hidden">
               <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1 truncate">
-                {donor.username}
+                {donor.username || 'متبرع'}
               </h3>
 
               <div className="flex items-center justify-end gap-1 text-slate-500 text-sm truncate">
-                <span>{donor.neighborhood}</span>
+                <span>{donor.neighborhood || 'غير محدد'}</span>
                 <MapPin size={14} className="opacity-70 shrink-0" />
               </div>
             </div>
@@ -947,7 +1018,10 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
                         size={14}
                         className={hasRated ? "fill-current text-emerald-500" : ""}
                       />
-                      <span dir="ltr">{ratingCount}</span>
+
+                      <span dir="ltr">
+                        {ratingCount}
+                      </span>
                     </button>
 
                     <button
@@ -975,20 +1049,22 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
                     }`}
                   >
                     {cooldown ? <CheckCircle2 size={16} /> : <Bell size={16} />}
+
                     {cooldown
                       ? 'تم إرسال الإشعار'
                       : isPhoneHidden
-                        ? 'إرسال طلب (الرقم مخفي)'
+                        ? 'إرسال طلب، الرقم مخفي'
                         : 'إرسال طلب تبرع'}
                   </button>
 
-                  {!isPhoneHidden && (
+                  {!isPhoneHidden && fullPhone && (
                     <div className="flex items-center justify-end gap-2 w-full">
                       <button
                         onClick={() => onCopyPhone(fullPhone)}
                         className="flex-1 flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 py-2 px-3 rounded-xl text-sm font-bold transition text-slate-600 dark:text-slate-300"
                       >
                         <Copy size={14} />
+
                         <span dir="ltr" className="truncate">
                           {fullPhone}
                         </span>
@@ -1018,12 +1094,7 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
     function PharmacyCard({ pharmacy, onCopyPhone }) {
       if (!pharmacy) return null;
 
-      const fullPhone = pharmacy.phone
-        ? String(pharmacy.phone).startsWith('0')
-          ? pharmacy.phone
-          : `0${pharmacy.phone}`
-        : '';
-
+      const fullPhone = getSafePhone(pharmacy.phone);
       const workingHours = getPharmacyWorkingHours(pharmacy);
 
       return (
@@ -1033,6 +1104,7 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
           <div className="flex justify-between items-center mb-5 mt-2 gap-2">
             <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-500/20 shrink-0">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+
               <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">
                 مفتوح
               </span>
@@ -1043,7 +1115,7 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
                 className="font-black text-slate-800 dark:text-white text-base truncate"
                 title={pharmacy.name}
               >
-                {pharmacy.name}
+                {pharmacy.name || 'صيدلية بدون اسم'}
               </h3>
             </div>
 
@@ -1129,8 +1201,159 @@ function ReportModal({ isOpen, onClose, onConfirm, donorName }) {
         </div>
       );
     }
-    
-function MedicineCard({
+
+    function DoctorCard({ doctor, user, setView, showNotification }) {
+      if (!doctor) return null;
+
+      const ratings =
+        doctor.ratings && typeof doctor.ratings === 'object'
+          ? doctor.ratings
+          : {};
+
+      const { average, count } = getAverageDoctorRating(doctor);
+      const myRating = user ? Number(ratings[user.uid] || 0) : 0;
+
+      const handleRate = async (value) => {
+        if (!user) {
+          showNotification('error', 'سجل الدخول أولاً لتقييم الطبيب.');
+          setView('login');
+          return;
+        }
+
+        try {
+          await setDoc(
+            doc(db, DOCTORS_COLLECTION, doctor.id),
+            {
+              ratings: {
+                [user.uid]: value
+              }
+            },
+            { merge: true }
+          );
+
+          showNotification('success', 'تم حفظ تقييمك للطبيب.');
+        } catch (e) {
+          showNotification('error', 'حدث خطأ أثناء حفظ التقييم.');
+        }
+      };
+
+      return (
+        <div className="glass-panel rounded-3xl p-5 mb-5 relative overflow-hidden transition-all duration-300 border border-emerald-100 dark:border-emerald-500/20 shadow-sm hover:shadow-md mx-1 animate-fadeIn group">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-400 to-brand-accent opacity-80 group-hover:opacity-100 transition-opacity"></div>
+
+          <div className="flex justify-between items-center mb-5 mt-2 gap-2">
+            <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-500/20 shrink-0">
+              <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">
+                طبيب
+              </span>
+            </div>
+
+            <div className="flex-1 text-center overflow-hidden px-1">
+              <h3
+                className="font-black text-slate-800 dark:text-white text-base truncate"
+                title={doctor.name}
+              >
+                {doctor.name || 'طبيب بدون اسم'}
+              </h3>
+
+              <p className="text-xs font-bold text-emerald-600 dark:text-brand-accent mt-1 truncate">
+                {doctor.specialty || 'اختصاص غير محدد'}
+              </p>
+            </div>
+
+            <div className="bg-emerald-50 dark:bg-slate-800 w-10 h-10 rounded-2xl flex items-center justify-center shadow-inner border border-emerald-100 dark:border-slate-700 shrink-0">
+              <HeartPulse size={20} className="text-emerald-500" />
+            </div>
+          </div>
+
+          <div className="space-y-3 bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800/50">
+            <div className="flex items-start justify-end gap-3 text-right">
+              <div className="flex-1 overflow-hidden">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mb-0.5">
+                  الاختصاص
+                </p>
+
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                  {doctor.specialty || '---'}
+                </p>
+              </div>
+
+              <div className="bg-white dark:bg-slate-800 p-2 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 text-slate-400 shrink-0">
+                <Stethoscope size={16} />
+              </div>
+            </div>
+
+            <div className="flex items-start justify-end gap-3 text-right">
+              <div className="flex-1 overflow-hidden">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mb-0.5">
+                  العنوان
+                </p>
+
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                  {doctor.address || '---'}
+                </p>
+              </div>
+
+              <div className="bg-white dark:bg-slate-800 p-2 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 text-slate-400 shrink-0">
+                <MapPin size={16} />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="text-left">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">
+                  التقييم
+                </p>
+
+                <p className="text-xs font-black text-slate-700 dark:text-slate-300" dir="ltr">
+                  {average ? average.toFixed(1) : '0.0'} / 5
+                  <span className="text-slate-400 mr-1">
+                    ({count})
+                  </span>
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map(value => (
+                  <button
+                    key={value}
+                    onClick={() => handleRate(value)}
+                    className={`transition active:scale-90 ${
+                      value <= (myRating || Math.round(average))
+                        ? 'text-yellow-400'
+                        : 'text-slate-300 dark:text-slate-600'
+                    }`}
+                    title={`تقييم ${value}`}
+                  >
+                    <Star size={22} fill="currentColor" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {doctor.mapLink ? (
+              <a
+                href={doctor.mapLink}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 border border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 py-3 px-4 rounded-xl text-sm font-black transition active:scale-95"
+              >
+                <Map size={20} />
+                فتح الموقع على الخريطة
+              </a>
+            ) : (
+              <div className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 py-3 px-4 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-700">
+                لا يوجد رابط خريطة
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function MedicineCard({
       medicine,
       user,
       userProfile,
@@ -1165,21 +1388,11 @@ function MedicineCard({
       let targetRole = '';
 
       if (isInProgress && isMine) {
-        targetPhone = medicine.fulfillerPhone
-          ? String(medicine.fulfillerPhone).startsWith('0')
-            ? medicine.fulfillerPhone
-            : `0${medicine.fulfillerPhone}`
-          : '';
-
+        targetPhone = getSafePhone(medicine.fulfillerPhone);
         targetName = medicine.fulfillerName || 'فاعل خير';
         targetRole = 'المتبرع';
       } else if (isInProgress && amIFulfiller) {
-        targetPhone = medicine.requesterPhone
-          ? String(medicine.requesterPhone).startsWith('0')
-            ? medicine.requesterPhone
-            : `0${medicine.requesterPhone}`
-          : '';
-
+        targetPhone = getSafePhone(medicine.requesterPhone);
         targetName = medicine.requesterName || 'طالب الدواء';
         targetRole = 'طالب الدواء';
       }
@@ -1229,6 +1442,7 @@ function MedicineCard({
                 <span className="truncate">
                   {medicine.requesterName}
                 </span>
+
                 <User size={12} className="shrink-0" />
               </div>
             </div>
@@ -1341,7 +1555,7 @@ function MedicineCard({
 
             {isPending && isMine && medicine.approved && (
               <div className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl font-bold text-center text-sm border border-slate-200 dark:border-slate-700">
-                طلبك منشور (بانتظار متبرع)
+                طلبك منشور، بانتظار متبرع
               </div>
             )}
 
@@ -1384,14 +1598,14 @@ function MedicineCard({
                     onClick={() => onCancelFulfill(medicine.id)}
                     className="flex-1 py-2 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-500/30 text-red-500 dark:text-red-400 rounded-xl font-bold text-xs hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                   >
-                    إلغاء (لم نتفق) ❌
+                    إلغاء، لم نتفق
                   </button>
 
                   <button
                     onClick={() => onComplete(medicine.id)}
                     className="flex-1 py-2 bg-emerald-500 text-white rounded-xl font-bold text-xs hover:bg-emerald-600 shadow-md transition-colors"
                   >
-                    تم التسليم بنجاح ✅
+                    تم التسليم بنجاح
                   </button>
                 </div>
               </div>
@@ -1414,8 +1628,8 @@ function MedicineCard({
         </div>
       );
     }
-
-    function HomeView({
+    
+function HomeView({
       donors = [],
       user,
       userProfile,
@@ -1435,24 +1649,37 @@ function MedicineCard({
       const [modalConfig, setModalConfig] = useState({ isOpen: false });
 
       const filtered = useMemo(() => {
-        let result = (Array.isArray(donors) ? donors : []).filter(
+        const safeDonors = Array.isArray(donors) ? donors : [];
+
+        let result = safeDonors.filter(
           d => filterBlood === 'الكل' || d.bloodType === filterBlood
         );
 
-        return result.sort((a, b) => (b.status !== 0 ? 1 : 0) - (a.status !== 0 ? 1 : 0));
+        return result.sort((a, b) => {
+          const aAvailable = a.status !== 0 ? 1 : 0;
+          const bAvailable = b.status !== 0 ? 1 : 0;
+
+          return bAvailable - aAvailable;
+        });
       }, [donors, filterBlood]);
 
-      const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
+      const closeModal = () => {
+        setModalConfig({
+          ...modalConfig,
+          isOpen: false
+        });
+      };
 
       const handleRate = async (donor) => {
         if (!user) {
-          showNotification('error', 'يجب تسجيل الدخول للشكر/التقييم.');
+          showNotification('error', 'يجب تسجيل الدخول للشكر أو التقييم.');
           setView('login');
           return;
         }
 
         if (user.uid === donor.id) {
-          return showNotification('error', 'لا يمكنك تقييم نفسك.');
+          showNotification('error', 'لا يمكنك تقييم نفسك.');
+          return;
         }
 
         const safeRaters = Array.isArray(donor.raters) ? donor.raters : [];
@@ -1465,25 +1692,33 @@ function MedicineCard({
 
           showNotification(
             'success',
-            hasRated ? 'تم إلغاء الشكر.' : 'تم إرسال شكرك للمتبرع!'
+            hasRated ? 'تم إلغاء الشكر.' : 'تم إرسال شكرك للمتبرع.'
           );
         } catch (e) {
-          showNotification('error', 'فشل التحديث.');
+          showNotification('error', 'فشل تحديث التقييم.');
         }
       };
 
       const submitReport = async (reason) => {
+        if (!user) {
+          showNotification('error', 'يجب تسجيل الدخول للإبلاغ.');
+          setView('login');
+          return;
+        }
+
+        if (!reportingDonor) return;
+
         try {
           await addDoc(collection(db, REPORTS_COLLECTION), {
             reportedDonorId: reportingDonor.id,
-            reportedDonorName: reportingDonor.username,
+            reportedDonorName: reportingDonor.username || 'متبرع',
             reporterId: user.uid,
             reason,
             status: 'pending',
             createdAt: serverTimestamp()
           });
 
-          showNotification('success', 'تم استلام بلاغك. ستقوم الإدارة بمراجعته قريبًا.');
+          showNotification('success', 'تم استلام البلاغ، ستقوم الإدارة بمراجعته.');
           setReportingDonor(null);
         } catch (e) {
           showNotification('error', 'حدث خطأ أثناء إرسال البلاغ.');
@@ -1498,13 +1733,17 @@ function MedicineCard({
         }
 
         if (user.uid === donor.id) {
-          return showNotification('error', 'لا يمكنك إرسال طلب لنفسك.');
+          showNotification('error', 'لا يمكنك إرسال طلب لنفسك.');
+          return;
         }
+
+        const requesterPhone = userProfile?.phone || '';
+        const requesterName = userProfile?.username || 'مريض';
 
         setModalConfig({
           isOpen: true,
           title: "تأكيد طلب التبرع",
-          message: `سيتم إرسال إشعار للمتبرع "${donor.username || 'فاعل خير'}" يتضمن رقم هاتفك (${userProfile?.phone || ''}) واسمك لكي يتواصل معك. هل أنت متأكد؟`,
+          message: `سيتم إرسال إشعار للمتبرع "${donor.username || 'فاعل خير'}" يتضمن اسمك ورقم هاتفك حتى يتواصل معك. هل تريد المتابعة؟`,
           isDestructive: false,
           confirmText: "إرسال الطلب",
           action: async () => {
@@ -1512,9 +1751,9 @@ function MedicineCard({
               await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
                 toUserId: donor.id,
                 fromUserId: user.uid,
-                fromUserPhone: userProfile?.phone || '',
-                title: "طلب تبرع عاجل 🩸",
-                body: `المستخدم ${userProfile?.username || 'مريض'} يحتاج لتبرعك. يرجى الاتصال به على الرقم ${userProfile?.phone || ''}`,
+                fromUserPhone: requesterPhone,
+                title: "طلب تبرع عاجل",
+                body: `المستخدم ${requesterName} يحتاج لتبرعك. يرجى التواصل معه على الرقم ${requesterPhone}`,
                 type: 'request',
                 read: false,
                 createdAt: serverTimestamp()
@@ -1524,19 +1763,29 @@ function MedicineCard({
                 await addDoc(collection(db, MAIL_COLLECTION), {
                   to: donor.email,
                   message: {
-                    subject: "طلب تبرع عاجل بالدم 🩸 - تطبيق قطرة حياة",
-                    html: `<div dir="rtl" style="font-family: Arial, sans-serif; text-align: right; color: #333;"><h2 style="color: #10b981;">مرحباً ${donor.username}،</h2><p>هناك حالة مستعجلة! المستخدم <b>${userProfile?.username || 'مريض'}</b> يحتاج لتبرعك بالدم في أقرب وقت ممكن.</p><p>يرجى التواصل معه مباشرة على الرقم: <b><a href="tel:${userProfile?.phone}">${userProfile?.phone || 'غير متوفر'}</a></b></p><br><p>جزاك الله خيراً وجعله في ميزان حسناتك.</p><p>مع تحيات،<br><b>فريق تطبيق Zomraa</b></p></div>`
+                    subject: "طلب تبرع عاجل بالدم - تطبيق Zomraa",
+                    html: `<div dir="rtl" style="font-family: Arial, sans-serif; text-align: right; color: #333;">
+                      <h2 style="color: #10b981;">مرحباً ${donor.username || ''}</h2>
+                      <p>هناك حالة تحتاج إلى تبرعك بالدم.</p>
+                      <p>المستخدم <b>${requesterName}</b> يحتاج للتواصل معك في أقرب وقت.</p>
+                      <p>رقم التواصل: <b><a href="tel:${requesterPhone}">${requesterPhone || 'غير متوفر'}</a></b></p>
+                      <br>
+                      <p>جزاك الله خيراً.</p>
+                      <p><b>فريق تطبيق Zomraa</b></p>
+                    </div>`
                   }
                 });
               }
 
               localStorage.setItem(`notify_${donor.id}`, String(new Date().getTime()));
 
-              showNotification('success', 'تم إرسال الإشعار بنجاح! المتبرع سيتواصل معك قريباً.');
+              showNotification('success', 'تم إرسال الإشعار بنجاح.');
 
-              if (onSuccessCallback) onSuccessCallback();
+              if (onSuccessCallback) {
+                onSuccessCallback();
+              }
             } catch (e) {
-              showNotification('error', 'حدث خطأ في إرسال الإشعار.');
+              showNotification('error', 'حدث خطأ أثناء إرسال الإشعار.');
             }
           }
         });
@@ -1571,7 +1820,9 @@ function MedicineCard({
                       : 'glass-panel text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
                   }`}
                 >
-                  <span dir="ltr">{t}</span>
+                  <span dir="ltr">
+                    {t}
+                  </span>
                 </button>
               ))}
             </div>
@@ -1580,37 +1831,44 @@ function MedicineCard({
           <div className="px-2 sm:px-6">
             {loading ? (
               <div className="py-20 flex flex-col items-center gap-4">
-                <Loader2 className="animate-spin text-emerald-500 dark:text-brand-accent" size={40} />
+                <Loader2
+                  className="animate-spin text-emerald-500 dark:text-brand-accent"
+                  size={40}
+                />
+
                 <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">
                   جاري جلب قائمة المتبرعين...
                 </p>
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800">
-                <Droplet size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-4 opacity-50" />
+                <Droplet
+                  size={48}
+                  className="text-slate-300 dark:text-slate-600 mx-auto mb-4 opacity-50"
+                />
 
                 <p className="text-slate-600 dark:text-slate-300 font-bold">
                   لا يوجد متبرعين متاحين حالياً
                 </p>
 
                 <p className="text-slate-400 dark:text-slate-500 text-sm mt-2 px-4">
-                  كن أول من يتبرع في هذه الفئة!
+                  كن أول من يتبرع في هذه الفئة.
                 </p>
               </div>
             ) : (
-              filtered.map(d => (
+              filtered.map(donor => (
                 <DonorCard
-                  key={d.id}
-                  donor={d}
+                  key={donor.id}
+                  donor={donor}
                   user={user}
                   onCopyPhone={onCopyPhone}
                   onRate={handleRate}
-                  onReport={d => {
+                  onReport={donor => {
                     if (!user) {
                       setView('login');
                       showNotification('error', 'يجب تسجيل الدخول للإبلاغ.');
                     } else {
-                      setReportingDonor(d);
+                      setReportingDonor(donor);
                     }
                   }}
                   onSendRequest={handleSendRequest}
@@ -1634,7 +1892,10 @@ function MedicineCard({
             confirmText={modalConfig.confirmText}
             onCancel={closeModal}
             onConfirm={() => {
-              modalConfig.action();
+              if (modalConfig.action) {
+                modalConfig.action();
+              }
+
               closeModal();
             }}
           />
@@ -1667,12 +1928,12 @@ function MedicineCard({
         const safePharmacies = Array.isArray(pharmacies) ? pharmacies : [];
 
         return safePharmacies
-          .filter(p => {
+          .filter(pharmacy => {
             const hasTodayDuty =
-              Array.isArray(p.dutyDates) &&
-              p.dutyDates.includes(todayStr);
+              Array.isArray(pharmacy.dutyDates) &&
+              pharmacy.dutyDates.includes(todayStr);
 
-            return hasTodayDuty && isNowWithinPharmacyHours(p);
+            return hasTodayDuty && isNowWithinPharmacyHours(pharmacy);
           })
           .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
       }, [pharmacies, todayStr]);
@@ -1700,7 +1961,7 @@ function MedicineCard({
             </p>
 
             <p className="text-slate-400 dark:text-slate-500 text-xs mt-2">
-              تظهر فقط الصيدليات التي تم تحديد تاريخ مناوبتها لهذا اليوم من لوحة الإدارة
+              تظهر فقط الصيدليات التي تم تحديد تاريخ مناوبتها لهذا اليوم من لوحة الإدارة.
             </p>
           </div>
 
@@ -1708,7 +1969,10 @@ function MedicineCard({
             {onDutyPharmacies.length === 0 ? (
               <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800">
                 <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center opacity-70">
-                  <Stethoscope size={40} className="text-slate-300 dark:text-slate-600" />
+                  <Stethoscope
+                    size={40}
+                    className="text-slate-300 dark:text-slate-600"
+                  />
                 </div>
 
                 <p className="text-slate-600 dark:text-slate-300 font-bold">
@@ -1720,10 +1984,10 @@ function MedicineCard({
                 </p>
               </div>
             ) : (
-              onDutyPharmacies.map(p => (
+              onDutyPharmacies.map(pharmacy => (
                 <PharmacyCard
-                  key={p.id}
-                  pharmacy={p}
+                  key={pharmacy.id}
+                  pharmacy={pharmacy}
                   onCopyPhone={onCopyPhone}
                 />
               ))
@@ -1734,6 +1998,8 @@ function MedicineCard({
     }
 
     function DoctorsView({
+      doctors = [],
+      user,
       isDark,
       toggleTheme,
       setView,
@@ -1743,6 +2009,23 @@ function MedicineCard({
       rejectRequest,
       showNotification
     }) {
+      const safeDoctors = Array.isArray(doctors) ? doctors : [];
+
+      const sortedDoctors = useMemo(() => {
+        return [...safeDoctors].sort((a, b) => {
+          const specialtyCompare = String(a.specialty || '').localeCompare(
+            String(b.specialty || ''),
+            'ar'
+          );
+
+          if (specialtyCompare !== 0) {
+            return specialtyCompare;
+          }
+
+          return String(a.name || '').localeCompare(String(b.name || ''), 'ar');
+        });
+      }, [safeDoctors]);
+
       return (
         <div className="pb-32 font-sans min-h-screen" dir="rtl">
           <AppHeader
@@ -1762,28 +2045,44 @@ function MedicineCard({
             </h2>
 
             <p className="text-emerald-600 dark:text-brand-accent font-bold text-sm">
-              أطباء وعيادات المنطقة
+              أسماء الأطباء، الاختصاصات، العناوين والتقييمات
             </p>
           </div>
 
           <div className="px-2 sm:px-6">
-            <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800">
-              <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center opacity-70">
-                <HeartPulse size={40} className="text-slate-300 dark:text-slate-600" />
+            {sortedDoctors.length === 0 ? (
+              <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800">
+                <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center opacity-70">
+                  <HeartPulse
+                    size={40}
+                    className="text-slate-300 dark:text-slate-600"
+                  />
+                </div>
+
+                <p className="text-slate-600 dark:text-slate-300 font-bold">
+                  لا يوجد أطباء مضافون حالياً
+                </p>
+
+                <p className="text-slate-400 dark:text-slate-500 text-sm mt-2 px-4 leading-relaxed">
+                  عند إضافة الأطباء إلى قاعدة البيانات سيظهرون هنا مع الاختصاص والعنوان والتقييم.
+                </p>
               </div>
-
-              <p className="text-slate-600 dark:text-slate-300 font-bold">
-                قريباً إن شاء الله
-              </p>
-
-              <p className="text-slate-400 dark:text-slate-500 text-sm mt-2 px-4 leading-relaxed">
-                سيتم توفير دليل شامل بأرقام وعناوين الأطباء في المنطقة لتسهيل التواصل معهم وتحديد المواعيد.
-              </p>
-            </div>
+            ) : (
+              sortedDoctors.map(doctor => (
+                <DoctorCard
+                  key={doctor.id}
+                  doctor={doctor}
+                  user={user}
+                  setView={setView}
+                  showNotification={showNotification}
+                />
+              ))
+            )}
           </div>
         </div>
       );
     }
+    
     
 function MedicinesView({
       user,
@@ -1810,11 +2109,37 @@ function MedicinesView({
       const [adding, setAdding] = useState(false);
       const [modalConfig, setModalConfig] = useState({ isOpen: false });
 
-      const visibleMedicines = (Array.isArray(medicines) ? medicines : []).filter(
-        m => m.approved === true || (user && m.requesterId === user.uid)
-      );
+      const visibleMedicines = useMemo(() => {
+        const safeMedicines = Array.isArray(medicines) ? medicines : [];
 
-      const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
+        return safeMedicines
+          .filter(medicine => {
+            return medicine.approved === true || (user && medicine.requesterId === user.uid);
+          })
+          .sort((a, b) => {
+            const aDate = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+            const bDate = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+
+            return bDate - aDate;
+          });
+      }, [medicines, user]);
+
+      const closeModal = () => {
+        setModalConfig({
+          ...modalConfig,
+          isOpen: false
+        });
+      };
+
+      const resetMedicineForm = () => {
+        setMedName('');
+        setQuantity('');
+        setHasPrescription('yes');
+        setPaymentStatus('charity');
+        setAvailability('unavailable');
+        setIsUrgent(false);
+        setMedDesc('');
+      };
 
       const handleAddRequest = async (e) => {
         e.preventDefault();
@@ -1825,40 +2150,44 @@ function MedicinesView({
           return;
         }
 
-        if (String(medName || '').length < 2 || String(quantity || '').length < 1) return;
+        if (String(medName || '').trim().length < 2) {
+          showNotification('error', 'اسم الدواء قصير جداً.');
+          return;
+        }
+
+        if (String(quantity || '').trim().length < 1) {
+          showNotification('error', 'يرجى إدخال الكمية.');
+          return;
+        }
 
         setAdding(true);
 
         try {
           await addDoc(collection(db, MEDICINES_COLLECTION), {
-            medicineName: medName,
-            quantity,
+            medicineName: medName.trim(),
+            quantity: quantity.trim(),
             hasPrescription,
             paymentStatus,
             availability,
             isUrgent,
-            description: medDesc,
+            description: medDesc.trim(),
             requesterId: user.uid,
             requesterName: userProfile?.username || 'مريض',
             requesterPhone: userProfile?.phone || '',
             status: 'pending',
             fulfillerId: null,
+            fulfillerName: null,
+            fulfillerPhone: null,
             approved: false,
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
           });
 
           showNotification('success', 'تمت إضافة طلبك، سيظهر للعامة بعد مراجعته من الإدارة.');
-
           setShowAddModal(false);
-          setMedName('');
-          setQuantity('');
-          setHasPrescription('yes');
-          setPaymentStatus('charity');
-          setAvailability('unavailable');
-          setIsUrgent(false);
-          setMedDesc('');
+          resetMedicineForm();
         } catch (err) {
-          showNotification('error', 'حدث خطأ أثناء الإضافة.');
+          showNotification('error', 'حدث خطأ أثناء إضافة الطلب.');
         } finally {
           setAdding(false);
         }
@@ -1874,7 +2203,7 @@ function MedicinesView({
         setModalConfig({
           isOpen: true,
           title: "تأكيد التكفل بالدواء",
-          message: "هل أنت متأكد أنك تستطيع توفير هذا الدواء وسوف تتواصل مع المريض لتسليمه؟",
+          message: "هل أنت متأكد أنك تستطيع توفير هذا الدواء وسوف تتواصل مع طالب الدواء لتسليمه؟",
           isDestructive: false,
           confirmText: "نعم، أتعهد بذلك",
           action: async () => {
@@ -1883,12 +2212,13 @@ function MedicinesView({
                 status: 'in_progress',
                 fulfillerId: user.uid,
                 fulfillerName: currentUserProfile?.username || 'فاعل خير',
-                fulfillerPhone: currentUserProfile?.phone || ''
+                fulfillerPhone: currentUserProfile?.phone || '',
+                updatedAt: serverTimestamp()
               });
 
-              showNotification('success', 'جزاك الله خيراً! تواصل مع المريض الآن.');
+              showNotification('success', 'جزاك الله خيراً، تواصل مع طالب الدواء الآن.');
             } catch (e) {
-              showNotification('error', 'حدث خطأ.');
+              showNotification('error', 'حدث خطأ أثناء تحديث الطلب.');
             }
           }
         });
@@ -1907,12 +2237,13 @@ function MedicinesView({
                 status: 'pending',
                 fulfillerId: null,
                 fulfillerName: null,
-                fulfillerPhone: null
+                fulfillerPhone: null,
+                updatedAt: serverTimestamp()
               });
 
-              showNotification('success', 'تم إلغاء التكفل.');
+              showNotification('success', 'تم إلغاء التكفل، وعاد الطلب للظهور.');
             } catch (e) {
-              showNotification('error', 'حدث خطأ.');
+              showNotification('error', 'حدث خطأ أثناء إلغاء التكفل.');
             }
           }
         });
@@ -1922,18 +2253,20 @@ function MedicinesView({
         setModalConfig({
           isOpen: true,
           title: "تأكيد التسليم",
-          message: "هل تم تسليم الدواء بنجاح واستلامه من قبل المريض؟",
+          message: "هل تم تسليم الدواء بنجاح واستلامه من قبل طالب الدواء؟",
           isDestructive: false,
-          confirmText: "نعم، تم التسليم ✅",
+          confirmText: "نعم، تم التسليم",
           action: async () => {
             try {
               await updateDoc(doc(db, MEDICINES_COLLECTION, id), {
-                status: 'completed'
+                status: 'completed',
+                completedAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
               });
 
-              showNotification('success', 'الحمد لله! تم إغلاق الطلب بنجاح.');
+              showNotification('success', 'الحمد لله، تم إغلاق الطلب بنجاح.');
             } catch (e) {
-              showNotification('error', 'حدث خطأ.');
+              showNotification('error', 'حدث خطأ أثناء تأكيد التسليم.');
             }
           }
         });
@@ -1951,7 +2284,7 @@ function MedicinesView({
               await deleteDoc(doc(db, MEDICINES_COLLECTION, id));
               showNotification('success', 'تم حذف الطلب.');
             } catch (e) {
-              showNotification('error', 'حدث خطأ أثناء الحذف.');
+              showNotification('error', 'حدث خطأ أثناء حذف الطلب.');
             }
           }
         });
@@ -1985,7 +2318,7 @@ function MedicinesView({
               onClick={() => {
                 if (!user) {
                   setView('login');
-                  showNotification('error', 'سجل دخولك لطلب دواء');
+                  showNotification('error', 'سجل دخولك أولاً لطلب دواء.');
                 } else {
                   setShowAddModal(true);
                 }
@@ -1999,7 +2332,10 @@ function MedicinesView({
           <div className="px-2 sm:px-6 mt-6">
             {loading ? (
               <div className="py-20 flex flex-col items-center gap-4">
-                <Loader2 className="animate-spin text-emerald-500 dark:text-brand-accent" size={40} />
+                <Loader2
+                  className="animate-spin text-emerald-500 dark:text-brand-accent"
+                  size={40}
+                />
 
                 <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">
                   جاري جلب الطلبات...
@@ -2008,7 +2344,10 @@ function MedicinesView({
             ) : visibleMedicines.length === 0 ? (
               <div className="text-center py-20 glass-panel rounded-[2rem] mx-4 border border-slate-200 dark:border-slate-800">
                 <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center opacity-70">
-                  <Pill size={40} className="text-slate-300 dark:text-slate-600" />
+                  <Pill
+                    size={40}
+                    className="text-slate-300 dark:text-slate-600"
+                  />
                 </div>
 
                 <p className="text-slate-600 dark:text-slate-300 font-bold">
@@ -2016,14 +2355,14 @@ function MedicinesView({
                 </p>
 
                 <p className="text-slate-400 dark:text-slate-500 text-sm mt-2 px-4">
-                  الحمد لله. يمكنك الضغط على (+) لإضافة طلب إذا احتجت لدواء غير متوفر.
+                  يمكنك الضغط على زر الإضافة لطلب دواء غير متوفر.
                 </p>
               </div>
             ) : (
-              visibleMedicines.map(m => (
+              visibleMedicines.map(medicine => (
                 <MedicineCard
-                  key={m.id}
-                  medicine={m}
+                  key={medicine.id}
+                  medicine={medicine}
                   user={user}
                   userProfile={userProfile}
                   onFulfill={handleFulfill}
@@ -2051,7 +2390,7 @@ function MedicinesView({
                 </h2>
 
                 <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 text-right">
-                  يرجى ملء التفاصيل بدقة لمساعدتك بأسرع وقت.
+                  يرجى ملء التفاصيل بدقة لمساعدة الناس على توفير الدواء بأسرع وقت.
                 </p>
 
                 <form onSubmit={handleAddRequest} className="space-y-4">
@@ -2078,7 +2417,7 @@ function MedicinesView({
 
                       <input
                         type="text"
-                        placeholder="مثال: علبة"
+                        placeholder="علبة"
                         className="custom-input w-full h-12 px-4 rounded-xl text-right outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all font-bold text-sm"
                         value={quantity}
                         onChange={e => setQuantity(e.target.value)}
@@ -2113,7 +2452,7 @@ function MedicinesView({
                       onChange={e => setPaymentStatus(e.target.value)}
                     >
                       <option value="buy">نعم، سأدفع ثمنه</option>
-                      <option value="charity">أحتاجه كصدقة (عاجز عن الدفع)</option>
+                      <option value="charity">أحتاجه كصدقة، عاجز عن الدفع</option>
                     </select>
                   </div>
 
@@ -2127,8 +2466,8 @@ function MedicinesView({
                       value={availability}
                       onChange={e => setAvailability(e.target.value)}
                     >
-                      <option value="unavailable">غير متوفر (مقطوع)</option>
-                      <option value="available">متوفر لكن ثمنه غالي</option>
+                      <option value="unavailable">غير متوفر، مقطوع</option>
+                      <option value="available">متوفر لكن ثمنه غالٍ</option>
                     </select>
                   </div>
 
@@ -2142,19 +2481,19 @@ function MedicinesView({
                       />
 
                       <span className="font-bold text-red-600 dark:text-red-400 text-sm">
-                        هذا الدواء لحالة مستعجلة جداً 🚨
+                        هذا الدواء لحالة مستعجلة جداً
                       </span>
                     </label>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 text-right">
-                      ملاحظات إضافية (اختياري)
+                      ملاحظات إضافية
                     </label>
 
                     <textarea
                       placeholder="اكتب أي تفاصيل أخرى..."
-                      className="custom-input w-full h-20 p-4 rounded-xl text-right outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all resize-none text-sm"
+                      className="custom-input w-full h-24 p-4 rounded-xl text-right outline-none focus:border-emerald-500 dark:focus:border-brand-accent transition-all resize-none text-sm"
                       value={medDesc}
                       onChange={e => setMedDesc(e.target.value)}
                     ></textarea>
@@ -2165,7 +2504,11 @@ function MedicinesView({
                     disabled={adding}
                     className="w-full h-14 bg-emerald-500 dark:bg-brand-accent text-white dark:text-slate-900 rounded-2xl font-black shadow-lg mt-4 flex items-center justify-center gap-2 hover:bg-emerald-600 dark:hover:bg-brand-accentHover transition-all disabled:opacity-70"
                   >
-                    {adding ? <Loader2 className="animate-spin" /> : 'إرسال الطلب للإدارة'}
+                    {adding ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      'إرسال الطلب للإدارة'
+                    )}
                   </button>
                 </form>
               </div>
@@ -2180,14 +2523,16 @@ function MedicinesView({
             confirmText={modalConfig.confirmText}
             onCancel={closeModal}
             onConfirm={() => {
-              modalConfig.action();
+              if (modalConfig.action) {
+                modalConfig.action();
+              }
+
               closeModal();
             }}
           />
         </div>
       );
     }
-
     function LoginView({ setView, showNotification }) {
       const [email, setEmail] = useState('');
       const [password, setPassword] = useState('');
@@ -2198,11 +2543,17 @@ function MedicinesView({
       const handleLogin = async (e) => {
         e.preventDefault();
 
+        if (!email || !password) {
+          showNotification('error', 'يرجى إدخال البريد وكلمة المرور.');
+          return;
+        }
+
         setLoading(true);
 
         try {
           await signInWithEmailAndPassword(auth, email.trim(), password);
-          showNotification('success', 'تم الدخول بنجاح');
+
+          showNotification('success', 'تم تسجيل الدخول بنجاح.');
           setView('profile');
         } catch (error) {
           if (
@@ -2212,7 +2563,7 @@ function MedicinesView({
           ) {
             showNotification('error', 'البريد أو كلمة المرور غير صحيحة.');
           } else {
-            showNotification('error', 'حدث خطأ في الاتصال، يرجى المحاولة مجدداً.');
+            showNotification('error', 'حدث خطأ في تسجيل الدخول.');
           }
 
           setLoading(false);
@@ -2239,14 +2590,21 @@ function MedicinesView({
                 />
 
                 <div className="absolute top-0 right-0 bg-white dark:bg-slate-900 rounded-full p-1 border border-slate-100 dark:border-slate-700">
-                  <Plus size={12} className="text-emerald-500 dark:text-brand-accent" />
+                  <Plus
+                    size={12}
+                    className="text-emerald-500 dark:text-brand-accent"
+                  />
                 </div>
               </div>
             </div>
 
             <h2 className="text-3xl font-black text-slate-800 dark:text-white text-center mb-2">
-              مرحباً بعودتك!
+              مرحباً بعودتك
             </h2>
+
+            <p className="text-slate-500 dark:text-slate-400 text-center text-sm mb-8">
+              سجل دخولك لإدارة حسابك والتفاعل مع التطبيق.
+            </p>
 
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="relative">
@@ -2295,9 +2653,13 @@ function MedicinesView({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-14 bg-brand-accent hover:bg-brand-accentHover text-slate-900 rounded-full font-black text-lg shadow-[0_4px_20px_rgba(205,235,87,0.1)] transition-all mt-4 flex items-center justify-center transform active:scale-95"
+                className="w-full h-14 bg-brand-accent hover:bg-brand-accentHover text-slate-900 rounded-full font-black text-lg shadow-[0_4px_20px_rgba(205,235,87,0.1)] transition-all mt-4 flex items-center justify-center transform active:scale-95 disabled:opacity-70"
               >
-                {loading ? <Loader2 className="animate-spin text-slate-900" /> : 'تسجيل الدخول'}
+                {loading ? (
+                  <Loader2 className="animate-spin text-slate-900" />
+                ) : (
+                  'تسجيل الدخول'
+                )}
               </button>
             </form>
 
@@ -2342,12 +2704,29 @@ function MedicinesView({
       const handleSubmit = async (e) => {
         e.preventDefault();
 
+        const username = String(formData.username || '').trim();
+        const email = String(formData.email || '').trim();
+        const phone = String(formData.phone || '').trim();
+        const neighborhood = String(formData.neighborhood || '').trim();
+
         if (!acceptTerms) {
-          return showNotification('error', 'يجب الموافقة على الشروط أولاً.');
+          showNotification('error', 'يجب الموافقة على الشروط أولاً.');
+          return;
         }
 
-        if (formData.phone.length < 10) {
-          return showNotification('error', 'رقم الهاتف قصير جداً');
+        if (username.length < 3) {
+          showNotification('error', 'الاسم قصير جداً.');
+          return;
+        }
+
+        if (phone.length < 10) {
+          showNotification('error', 'رقم الهاتف قصير جداً.');
+          return;
+        }
+
+        if (neighborhood.length < 2) {
+          showNotification('error', 'يرجى إدخال الحي أو الدوار.');
+          return;
         }
 
         setLoading(true);
@@ -2355,13 +2734,18 @@ function MedicinesView({
         try {
           const cred = await createUserWithEmailAndPassword(
             auth,
-            formData.email.trim(),
+            email,
             formData.password
           );
 
           await setDoc(doc(db, DONORS_COLLECTION, cred.user.uid), {
             uid: cred.user.uid,
-            ...formData,
+            username,
+            email,
+            phone,
+            neighborhood,
+            municipality: formData.municipality,
+            bloodType: formData.bloodType,
             status: 1,
             raters: [],
             isPhoneHidden,
@@ -2369,13 +2753,18 @@ function MedicinesView({
             lastDonationDate: null
           });
 
-          showNotification('success', 'تم إنشاء الحساب بنجاح!');
+          showNotification('success', 'تم إنشاء الحساب بنجاح.');
           setView('profile');
         } catch (error) {
           let msg = 'فشل التسجيل. تأكد من البيانات.';
 
-          if (error.code === 'auth/email-already-in-use') msg = 'البريد مستخدم بالفعل.';
-          else if (error.code === 'auth/weak-password') msg = 'كلمة المرور ضعيفة.';
+          if (error.code === 'auth/email-already-in-use') {
+            msg = 'البريد الإلكتروني مستخدم بالفعل.';
+          } else if (error.code === 'auth/weak-password') {
+            msg = 'كلمة المرور ضعيفة، يجب أن تكون 6 أحرف على الأقل.';
+          } else if (error.code === 'auth/invalid-email') {
+            msg = 'البريد الإلكتروني غير صحيح.';
+          }
 
           showNotification('error', msg);
           setLoading(false);
@@ -2383,7 +2772,10 @@ function MedicinesView({
       };
 
       return (
-        <div className="min-h-screen p-4 sm:p-6 flex flex-col justify-center font-sans pb-24" dir="rtl">
+        <div
+          className="min-h-screen p-4 sm:p-6 flex flex-col justify-center font-sans pb-24"
+          dir="rtl"
+        >
           <div className="glass-panel rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative max-w-md mx-auto w-full">
             <button
               onClick={() => setView('home')}
@@ -2393,16 +2785,24 @@ function MedicinesView({
               إغلاق
             </button>
 
-            <h2 className="text-2xl font-black text-emerald-600 dark:text-brand-accent mb-6 text-center mt-4">
+            <h2 className="text-2xl font-black text-emerald-600 dark:text-brand-accent mb-2 text-center mt-4">
               انضم للمتبرعين
             </h2>
+
+            <p className="text-slate-500 dark:text-slate-400 text-center text-sm mb-6">
+              أنشئ حسابك ليظهر اسمك ضمن قائمة المتبرعين.
+            </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <input
-                  placeholder="الاسم المستعار (سيظهر للجميع)"
+                  placeholder="الاسم المستعار، سيظهر للجميع"
                   className="custom-input h-12 rounded-xl px-4 w-full text-right"
-                  onChange={e => setFormData({ ...formData, username: e.target.value })}
+                  value={formData.username}
+                  onChange={e => setFormData({
+                    ...formData,
+                    username: e.target.value
+                  })}
                   required
                 />
               </div>
@@ -2417,7 +2817,11 @@ function MedicinesView({
                 <input
                   placeholder="الحي / الدوار"
                   className="custom-input h-12 rounded-xl px-4 text-right"
-                  onChange={e => setFormData({ ...formData, neighborhood: e.target.value })}
+                  value={formData.neighborhood}
+                  onChange={e => setFormData({
+                    ...formData,
+                    neighborhood: e.target.value
+                  })}
                   required
                 />
               </div>
@@ -2426,16 +2830,24 @@ function MedicinesView({
                 type="email"
                 placeholder="البريد الإلكتروني"
                 className="custom-input h-12 rounded-xl px-4 w-full text-right"
-                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                value={formData.email}
+                onChange={e => setFormData({
+                  ...formData,
+                  email: e.target.value
+                })}
                 required
               />
 
               <input
                 type="password"
-                placeholder="كلمة المرور (+6 حروف)"
+                placeholder="كلمة المرور، 6 أحرف على الأقل"
                 minLength={6}
                 className="custom-input h-12 rounded-xl px-4 w-full text-right"
-                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                value={formData.password}
+                onChange={e => setFormData({
+                  ...formData,
+                  password: e.target.value
+                })}
                 required
               />
 
@@ -2444,7 +2856,11 @@ function MedicinesView({
                   type="tel"
                   placeholder="رقم الهاتف"
                   className="custom-input h-12 rounded-xl px-4 text-right flex-1"
-                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  value={formData.phone}
+                  onChange={e => setFormData({
+                    ...formData,
+                    phone: e.target.value
+                  })}
                   dir="ltr"
                   required
                 />
@@ -2465,11 +2881,15 @@ function MedicinesView({
 
               <select
                 className="custom-input custom-select h-12 rounded-xl px-4 w-full text-center font-bold text-lg"
-                onChange={e => setFormData({ ...formData, bloodType: e.target.value })}
+                value={formData.bloodType}
+                onChange={e => setFormData({
+                  ...formData,
+                  bloodType: e.target.value
+                })}
               >
-                {['A+', 'O+', 'B+', 'AB+', 'A-', 'O-', 'B-', 'AB-'].map(t => (
-                  <option key={t} value={t}>
-                    {t}
+                {['A+', 'O+', 'B+', 'AB+', 'A-', 'O-', 'B-', 'AB-'].map(type => (
+                  <option key={type} value={type}>
+                    {type}
                   </option>
                 ))}
               </select>
@@ -2508,58 +2928,64 @@ function MedicinesView({
             </form>
           </div>
 
-          <BaseModal isOpen={showTerms} onClose={() => setShowTerms(false)}>
+          <BaseModal
+            isOpen={showTerms}
+            onClose={() => setShowTerms(false)}
+          >
             <h2 className="text-xl font-black text-emerald-600 dark:text-brand-accent mb-4">
               شروط الاستخدام وإخلاء المسؤولية
             </h2>
 
             <div className="text-xs text-slate-600 dark:text-slate-300 space-y-3 text-right leading-relaxed pr-2">
               <h3 className="font-bold text-slate-800 dark:text-white">
-                1. طبيعة الخدمة:
+                1. طبيعة الخدمة
               </h3>
 
               <p>
-                هذا التطبيق هو منصة تقنية تهدف للربط الإنساني والتطوعي بين المتبرعين بالدم والمحتاجين إليه.
-                التطبيق ليس جهة طبية ولا يقوم بجمع الدم أو تخزينه، ولا يغني عن الإجراءات الرسمية المتبعة في مراكز حقن الدم والمستشفيات التابعة لوزارة الصحة.
+                هذا التطبيق منصة تقنية تهدف للربط الإنساني والتطوعي بين المتبرعين بالدم والمحتاجين إليه.
+                التطبيق ليس جهة طبية ولا يقوم بجمع الدم أو تخزينه، ولا يغني عن الإجراءات الرسمية المتبعة في مراكز حقن الدم والمستشفيات.
               </p>
 
               <h3 className="font-bold text-slate-800 dark:text-white mt-4">
-                2. حماية المعطيات الشخصية:
+                2. حماية المعطيات الشخصية
               </h3>
 
               <p>
-                التزاماً بالقانون 18-07 المتعلق بحماية المعطيات الشخصية، نؤكد أن البيانات المدخلة
-                (رقم الهاتف، الفصيلة) تُستخدم حصراً لغرض التنسيق للتبرع.
+                البيانات المدخلة مثل رقم الهاتف وفصيلة الدم تستخدم لغرض التنسيق للتبرع فقط.
               </p>
 
               <p>
-                للمستخدم الحق الكامل في استخدام اسم مستعار، كما يملك الحق في إخفاء رقم هاتفه أو حذف حسابه نهائياً في أي وقت، وهو ما سيؤدي لمسح بياناته من قاعدة بياناتنا فوراً.
+                يمكن للمستخدم استعمال اسم مستعار، ويمكنه إخفاء رقم هاتفه أو حذف حسابه نهائياً في أي وقت.
               </p>
 
               <h3 className="font-bold text-slate-800 dark:text-white mt-4">
-                3. إخلاء المسؤولية:
+                3. إخلاء المسؤولية
               </h3>
 
               <ul className="list-disc pr-4 space-y-1">
                 <li>
-                  المطور غير مسؤول عن دقة البيانات التي يضعها المستخدمون مثل فصيلة الدم، ويجب على الجهة الطبية المستقبلة للمتبرع إجراء التحاليل اللازمة للتأكد.
+                  المطور غير مسؤول عن دقة البيانات التي يضعها المستخدمون مثل فصيلة الدم.
                 </li>
 
                 <li>
-                  المطور غير مسؤول عن أي سوء استخدام لبيانات التواصل خارج إطار هذا التطبيق.
+                  يجب على الجهة الطبية التأكد من فصيلة الدم وإجراء التحاليل اللازمة.
                 </li>
 
                 <li>
-                  يُمنع منعاً باتاً طلب أي مقابل مادي مقابل التبرع، والتطبيق مخصص للعمل التطوعي المجاني فقط.
+                  المطور غير مسؤول عن أي سوء استخدام لبيانات التواصل خارج إطار التطبيق.
+                </li>
+
+                <li>
+                  يمنع طلب أي مقابل مادي مقابل التبرع، والتطبيق مخصص للعمل التطوعي المجاني فقط.
                 </li>
               </ul>
 
               <h3 className="font-bold text-slate-800 dark:text-white mt-4">
-                4. الموافقة:
+                4. الموافقة
               </h3>
 
               <p>
-                بقيامك بالتسجيل في التطبيق، أنت تقر بقرائتك لهذه الشروط وتوافق على مشاركة فصيلة دمك ومعلومات التواصل الخاصة بك مع المستخدمين الآخرين لغرض التبرع.
+                بتسجيلك في التطبيق، أنت تقر بقراءة هذه الشروط وتوافق على استخدام بياناتك لغرض التنسيق للتبرع.
               </p>
             </div>
 
@@ -2590,12 +3016,16 @@ function ProfileView({
       rejectRequest
     }) {
       const [loading, setLoading] = useState(false);
+
       const [isEditingPhone, setIsEditingPhone] = useState(false);
       const [newPhone, setNewPhone] = useState('');
+
       const [isEditingUsername, setIsEditingUsername] = useState(false);
       const [newUsername, setNewUsername] = useState('');
+
       const [isEditingNeighborhood, setIsEditingNeighborhood] = useState(false);
       const [newNeighborhood, setNewNeighborhood] = useState('');
+
       const [modalConfig, setModalConfig] = useState({ isOpen: false });
 
       useEffect(() => {
@@ -2606,13 +3036,18 @@ function ProfileView({
         }
       }, [donorData]);
 
-      const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
+      const closeModal = () => {
+        setModalConfig({
+          ...modalConfig,
+          isOpen: false
+        });
+      };
 
       const handleLogout = () => {
         setModalConfig({
           isOpen: true,
           title: "تسجيل الخروج",
-          message: "هل متأكد من تسجيل الخروج؟",
+          message: "هل أنت متأكد من تسجيل الخروج؟",
           isDestructive: true,
           confirmText: "خروج",
           action: async () => {
@@ -2626,7 +3061,7 @@ function ProfileView({
         setModalConfig({
           isOpen: true,
           title: "حذف الحساب نهائياً",
-          message: "لن تتمكن من استعادة بياناتك.",
+          message: "سيتم حذف حسابك وبياناتك من قائمة المتبرعين. لا يمكن التراجع عن هذا الإجراء.",
           isDestructive: true,
           confirmText: "حذف نهائي",
           action: async () => {
@@ -2637,7 +3072,7 @@ function ProfileView({
               await deleteUser(user);
               window.location.reload();
             } catch (error) {
-              showNotification("error", "سجل الدخول مجدداً أولاً.");
+              showNotification("error", "للحذف النهائي، سجل الخروج ثم ادخل مجدداً وحاول مرة أخرى.");
               setLoading(false);
             }
           }
@@ -2645,8 +3080,11 @@ function ProfileView({
       };
 
       const handleUpdateField = async (field, value, setIsEditing) => {
-        if (!value || String(value).length < 3) {
-          return showNotification('error', "قيمة قصيرة جداً");
+        const cleanValue = String(value || '').trim();
+
+        if (!cleanValue || cleanValue.length < 2) {
+          showNotification('error', "القيمة قصيرة جداً.");
+          return;
         }
 
         setLoading(true);
@@ -2654,14 +3092,17 @@ function ProfileView({
         try {
           await setDoc(
             doc(db, DONORS_COLLECTION, user.uid),
-            { [field]: value },
+            {
+              [field]: cleanValue,
+              updatedAt: serverTimestamp()
+            },
             { merge: true }
           );
 
-          showNotification('success', 'تم التحديث');
+          showNotification('success', 'تم التحديث بنجاح.');
           setIsEditing(false);
         } catch (e) {
-          showNotification('error', "فشل التحديث");
+          showNotification('error', "فشل التحديث.");
         } finally {
           setLoading(false);
         }
@@ -2670,7 +3111,10 @@ function ProfileView({
       if (!donorData) {
         return (
           <div className="min-h-screen flex items-center justify-center">
-            <Loader2 className="animate-spin text-emerald-500 dark:text-brand-accent" size={40} />
+            <Loader2
+              className="animate-spin text-emerald-500 dark:text-brand-accent"
+              size={40}
+            />
           </div>
         );
       }
@@ -2691,6 +3135,7 @@ function ProfileView({
 
         if (new Date() < nextDonationDate) {
           isEligibleToDonate = false;
+
           daysRemaining = Math.ceil(
             Math.abs(nextDonationDate - new Date()) / (1000 * 60 * 60 * 24)
           );
@@ -2699,7 +3144,8 @@ function ProfileView({
 
       const toggleStatus = async () => {
         if (!isEligibleToDonate) {
-          return showNotification('error', `لا يمكنك التبرع، متبقي ${daysRemaining} يوماً.`);
+          showNotification('error', `لا يمكنك التبرع الآن، متبقي ${daysRemaining} يوماً.`);
+          return;
         }
 
         setLoading(true);
@@ -2707,16 +3153,19 @@ function ProfileView({
         try {
           await setDoc(
             doc(db, DONORS_COLLECTION, user.uid),
-            { status: donorData.status !== 0 ? 0 : 1 },
+            {
+              status: donorData.status !== 0 ? 0 : 1,
+              updatedAt: serverTimestamp()
+            },
             { merge: true }
           );
 
           showNotification(
             'success',
-            donorData.status !== 0 ? 'أنت الآن مخفي ⛔' : 'أنت الآن متاح ✅'
+            donorData.status !== 0 ? 'أنت الآن مخفي من قائمة المتبرعين.' : 'أنت الآن متاح للتبرع.'
           );
         } catch (e) {
-          showNotification('error', "خطأ!");
+          showNotification('error', "حدث خطأ أثناء تغيير الحالة.");
         } finally {
           setLoading(false);
         }
@@ -2728,13 +3177,16 @@ function ProfileView({
         try {
           await setDoc(
             doc(db, DONORS_COLLECTION, user.uid),
-            { isPhoneHidden: !donorData.isPhoneHidden },
+            {
+              isPhoneHidden: !donorData.isPhoneHidden,
+              updatedAt: serverTimestamp()
+            },
             { merge: true }
           );
 
-          showNotification('success', 'تم تحديث خصوصية الهاتف');
+          showNotification('success', 'تم تحديث خصوصية رقم الهاتف.');
         } catch (e) {
-          showNotification('error', "خطأ!");
+          showNotification('error', "حدث خطأ أثناء تحديث الخصوصية.");
         } finally {
           setLoading(false);
         }
@@ -2744,9 +3196,9 @@ function ProfileView({
         setModalConfig({
           isOpen: true,
           title: "تأكيد التبرع",
-          message: "سيتم إخفاء رقمك لـ 3 أشهر.",
+          message: "سيتم إخفاء حسابك من قائمة المتبرعين لمدة 90 يوماً حفاظاً على صحتك.",
           isDestructive: false,
-          confirmText: "متأكد",
+          confirmText: "نعم، تبرعت",
           action: async () => {
             setLoading(true);
 
@@ -2755,14 +3207,15 @@ function ProfileView({
                 doc(db, DONORS_COLLECTION, user.uid),
                 {
                   lastDonationDate: serverTimestamp(),
-                  status: 0
+                  status: 0,
+                  updatedAt: serverTimestamp()
                 },
                 { merge: true }
               );
 
-              showNotification('success', 'تم بدء فترة النقاهة.');
+              showNotification('success', 'تم بدء فترة النقاهة الصحية.');
             } catch (e) {
-              showNotification('error', "خطأ.");
+              showNotification('error', "حدث خطأ أثناء حفظ تاريخ التبرع.");
             } finally {
               setLoading(false);
             }
@@ -2770,11 +3223,11 @@ function ProfileView({
         });
       };
 
-      const handleCancelCooldown = async () => {
+      const handleCancelCooldown = () => {
         setModalConfig({
           isOpen: true,
           title: "إلغاء فترة النقاهة",
-          message: "تفعيل التبرع عن طريق الخطأ؟",
+          message: "استخدم هذا الخيار فقط إذا ضغطت على زر التبرع بالخطأ.",
           isDestructive: false,
           confirmText: "نعم، إلغاء",
           action: async () => {
@@ -2785,14 +3238,15 @@ function ProfileView({
                 doc(db, DONORS_COLLECTION, user.uid),
                 {
                   lastDonationDate: null,
-                  status: 1
+                  status: 1,
+                  updatedAt: serverTimestamp()
                 },
                 { merge: true }
               );
 
-              showNotification('success', 'تم التراجع.');
+              showNotification('success', 'تم إلغاء فترة النقاهة.');
             } catch (e) {
-              showNotification('error', "خطأ.");
+              showNotification('error', "حدث خطأ أثناء الإلغاء.");
             } finally {
               setLoading(false);
             }
@@ -2861,7 +3315,7 @@ function ProfileView({
                   </div>
                 ) : (
                   <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2">
-                    {donorData.username}
+                    {donorData.username || 'مستخدم'}
 
                     <button
                       onClick={() => setIsEditingUsername(true)}
@@ -2899,10 +3353,13 @@ function ProfileView({
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 glass-panel px-4 py-1.5 rounded-full">
-                    <Phone size={14} className="text-slate-400 dark:text-slate-500" />
+                    <Phone
+                      size={14}
+                      className="text-slate-400 dark:text-slate-500"
+                    />
 
                     <span className="text-slate-700 dark:text-slate-300 font-bold" dir="ltr">
-                      {donorData.phone}
+                      {donorData.phone || '---'}
                     </span>
 
                     <button
@@ -2940,7 +3397,10 @@ function ProfileView({
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/50 px-4 py-1.5 rounded-full text-sm">
-                    <MapPin size={14} className="text-slate-400 dark:text-slate-500" />
+                    <MapPin
+                      size={14}
+                      className="text-slate-400 dark:text-slate-500"
+                    />
 
                     <span className="text-slate-600 dark:text-slate-400 font-medium">
                       {donorData.neighborhood || 'الأمير عبد القادر'}
@@ -2953,10 +3413,12 @@ function ProfileView({
                       <Edit2 size={12} />
                     </button>
 
-                    <span className="mx-1 text-slate-300 dark:text-slate-700">•</span>
+                    <span className="mx-1 text-slate-300 dark:text-slate-700">
+                      •
+                    </span>
 
                     <span dir="ltr" className="font-bold text-emerald-600 dark:text-brand-accent">
-                      {donorData.bloodType}
+                      {donorData.bloodType || '-'}
                     </span>
                   </div>
                 )}
@@ -2973,7 +3435,10 @@ function ProfileView({
                   إلغاء بالخطأ
                 </button>
 
-                <CalendarClock size={28} className="text-blue-500 dark:text-blue-400 mx-auto mb-2 mt-2" />
+                <CalendarClock
+                  size={28}
+                  className="text-blue-500 dark:text-blue-400 mx-auto mb-2 mt-2"
+                />
 
                 <h4 className="font-bold text-blue-700 dark:text-blue-300 mb-1">
                   فترة نقاهة صحية
@@ -3065,7 +3530,7 @@ function ProfileView({
                 className="w-full mt-2 bg-white dark:bg-slate-900 border-2 border-emerald-500 dark:border-brand-accent text-emerald-600 dark:text-brand-accent py-4 rounded-[2rem] font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95"
               >
                 <ShieldCheck size={22} />
-                تبرعت اليوم (بدء النقاهة)
+                تبرعت اليوم، بدء النقاهة
               </button>
             )}
 
@@ -3096,7 +3561,10 @@ function ProfileView({
             confirmText={modalConfig.confirmText}
             onCancel={closeModal}
             onConfirm={() => {
-              modalConfig.action();
+              if (modalConfig.action) {
+                modalConfig.action();
+              }
+
               closeModal();
             }}
           />
@@ -3107,11 +3575,15 @@ function ProfileView({
     function App() {
       const [user, setUser] = useState(null);
       const [userProfile, setUserProfile] = useState(null);
+
       const [donors, setDonors] = useState([]);
       const [medicines, setMedicines] = useState([]);
       const [pharmacies, setPharmacies] = useState([]);
+      const [doctors, setDoctors] = useState([]);
       const [notifications, setNotifications] = useState([]);
+
       const [view, setView] = useState('home');
+
       const [loading, setLoading] = useState(true);
       const [loadingMed, setLoadingMed] = useState(true);
       const [notification, setNotification] = useState(null);
@@ -3133,35 +3605,52 @@ function ProfileView({
       }, [isDark]);
 
       useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (u) => {
-          if (u) {
-            setUser(u);
+        let unsubscribeProfile = null;
+        let unsubscribeNotifications = null;
 
-            onSnapshot(
-              doc(db, DONORS_COLLECTION, u.uid),
-              (d) => {
-                if (d.exists()) {
+        const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+          if (unsubscribeProfile) {
+            unsubscribeProfile();
+            unsubscribeProfile = null;
+          }
+
+          if (unsubscribeNotifications) {
+            unsubscribeNotifications();
+            unsubscribeNotifications = null;
+          }
+
+          if (currentUser) {
+            setUser(currentUser);
+
+            unsubscribeProfile = onSnapshot(
+              doc(db, DONORS_COLLECTION, currentUser.uid),
+              (snapshot) => {
+                if (snapshot.exists()) {
                   setUserProfile({
-                    id: d.id,
-                    ...d.data()
+                    id: snapshot.id,
+                    ...snapshot.data()
                   });
+                } else {
+                  setUserProfile(null);
                 }
 
                 setInitializing(false);
               },
-              () => setInitializing(false)
+              () => {
+                setInitializing(false);
+              }
             );
 
-            onSnapshot(
+            unsubscribeNotifications = onSnapshot(
               query(collection(db, NOTIFICATIONS_COLLECTION), orderBy('createdAt', 'desc')),
-              (s) => {
+              (snapshot) => {
                 setNotifications(
-                  s.docs
-                    .map(d => ({
-                      id: d.id,
-                      ...d.data()
+                  snapshot.docs
+                    .map(item => ({
+                      id: item.id,
+                      ...item.data()
                     }))
-                    .filter(n => n.toUserId === u.uid)
+                    .filter(item => item.toUserId === currentUser.uid)
                 );
               }
             );
@@ -3173,45 +3662,73 @@ function ProfileView({
           }
         });
 
-        return () => unsubscribe();
+        return () => {
+          unsubscribeAuth();
+
+          if (unsubscribeProfile) {
+            unsubscribeProfile();
+          }
+
+          if (unsubscribeNotifications) {
+            unsubscribeNotifications();
+          }
+        };
       }, []);
 
       useEffect(() => {
         const unsubDonors = onSnapshot(
           query(collection(db, DONORS_COLLECTION), orderBy('createdAt', 'desc')),
-          (s) => {
+          (snapshot) => {
             setDonors(
-              s.docs.map(d => ({
-                id: d.id,
-                ...d.data()
+              snapshot.docs.map(item => ({
+                id: item.id,
+                ...item.data()
               }))
             );
 
+            setLoading(false);
+          },
+          () => {
             setLoading(false);
           }
         );
 
         const unsubMedicines = onSnapshot(
           query(collection(db, MEDICINES_COLLECTION), orderBy('createdAt', 'desc')),
-          (s) => {
+          (snapshot) => {
             setMedicines(
-              s.docs.map(d => ({
-                id: d.id,
-                ...d.data()
+              snapshot.docs.map(item => ({
+                id: item.id,
+                ...item.data()
               }))
             );
 
+            setLoadingMed(false);
+          },
+          () => {
             setLoadingMed(false);
           }
         );
 
         const unsubPharmacies = onSnapshot(
           query(collection(db, PHARMACIES_COLLECTION), orderBy('createdAt', 'desc')),
-          (s) => {
+          (snapshot) => {
             setPharmacies(
-              s.docs.map(d => ({
-                id: d.id,
-                ...d.data()
+              snapshot.docs.map(item => ({
+                id: item.id,
+                ...item.data()
+              }))
+            );
+          }
+        );
+
+        const unsubDoctors = onSnapshot(
+          collection(db, DOCTORS_COLLECTION),
+          (snapshot) => {
+            setDoctors(
+              snapshot.docs.map(item => ({
+                id: item.id,
+                ...item.data()
               }))
             );
           }
@@ -3221,20 +3738,34 @@ function ProfileView({
           unsubDonors();
           unsubMedicines();
           unsubPharmacies();
+          unsubDoctors();
         };
       }, []);
 
       const showNotification = (type, msg) => {
-        setNotification({ type, msg });
-        setTimeout(() => setNotification(null), 3500);
+        setNotification({
+          type,
+          msg
+        });
+
+        setTimeout(() => {
+          setNotification(null);
+        }, 3500);
       };
 
-      const handleCopy = (phone) => {
-        navigator.clipboard.writeText(phone);
-        showNotification('success', 'تم النسخ');
+      const handleCopy = (value) => {
+        if (!value) {
+          showNotification('error', 'لا يوجد شيء لنسخه.');
+          return;
+        }
+
+        navigator.clipboard.writeText(value);
+        showNotification('success', 'تم النسخ.');
       };
 
-      const toggleTheme = () => setIsDark(!isDark);
+      const toggleTheme = () => {
+        setIsDark(!isDark);
+      };
 
       const markAsRead = async (id) => {
         try {
@@ -3251,14 +3782,14 @@ function ProfileView({
       };
 
       const rejectRequest = async (notif) => {
-        if (!user || !userProfile) return;
+        if (!user || !userProfile || !notif) return;
 
         try {
           await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
             toUserId: notif.fromUserId,
             fromUserId: user.uid,
-            title: "اعتذار عن التبرع 😔",
-            body: `نعتذر، المتبرع "${userProfile.username}" غير متاح للتبرع في الوقت الحالي.\nنسأل الله العظيم أن يشفي مريضكم.`,
+            title: "اعتذار عن التبرع",
+            body: `نعتذر، المتبرع "${userProfile.username || 'متبرع'}" غير متاح للتبرع في الوقت الحالي.\nنسأل الله العظيم أن يشفي مريضكم.`,
             type: 'info',
             read: false,
             createdAt: serverTimestamp()
@@ -3267,13 +3798,18 @@ function ProfileView({
           await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, notif.id));
 
           showNotification('success', 'تم إرسال الاعتذار.');
-        } catch (e) {}
+        } catch (e) {
+          showNotification('error', 'حدث خطأ أثناء إرسال الاعتذار.');
+        }
       };
 
       if (initializing) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-            <Loader2 className="animate-spin text-emerald-500" size={48} />
+            <Loader2
+              className="animate-spin text-emerald-500"
+              size={48}
+            />
           </div>
         );
       }
@@ -3313,6 +3849,21 @@ function ProfileView({
             />
           )}
 
+          {view === 'doctors' && (
+            <DoctorsView
+              doctors={doctors}
+              user={user}
+              isDark={isDark}
+              toggleTheme={toggleTheme}
+              setView={setView}
+              notifications={notifications}
+              markAsRead={markAsRead}
+              deleteNotification={deleteNotification}
+              rejectRequest={rejectRequest}
+              showNotification={showNotification}
+            />
+          )}
+
           {view === 'medicines' && (
             <MedicinesView
               user={user}
@@ -3327,19 +3878,6 @@ function ProfileView({
               markAsRead={markAsRead}
               deleteNotification={deleteNotification}
               rejectRequest={rejectRequest}
-            />
-          )}
-
-          {view === 'doctors' && (
-            <DoctorsView
-              isDark={isDark}
-              toggleTheme={toggleTheme}
-              setView={setView}
-              notifications={notifications}
-              markAsRead={markAsRead}
-              deleteNotification={deleteNotification}
-              rejectRequest={rejectRequest}
-              showNotification={showNotification}
             />
           )}
 
