@@ -457,45 +457,88 @@
       );
     }
 
-    // AppHeader
-    function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNotification,rejectRequest,showNotification,user,userProfile}){
-      const [showAbout,setShowAbout]=useState(false); const [showNotifs,setShowNotifs]=useState(false);
-      const safe=Array.isArray(notifications)?notifications:[]; const unread=safe.filter(n=>!n.read).length;
-      const [canInstall, setCanInstall] = useState(false);
-      useEffect(() => {
-        const handler = () => setCanInstall(true);
-        window.addEventListener('beforeinstallprompt', handler);
-        if (window.matchMedia('(display-mode: standalone)').matches) setCanInstall(false);
-        return () => window.removeEventListener('beforeinstallprompt', handler);
-      }, []);
-      const triggerInstall = () => {
-        if (window._deferredPWAInstall) {
-          window._deferredPWAInstall.prompt();
-          window._deferredPWAInstall.userChoice.then((result) => {
-            if (result.outcome === 'accepted') { setCanInstall(false); }
-            window._deferredPWAInstall = null;
-          });
-        }
-      };
-      return (<>
-        <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b px-4 py-4 flex justify-between items-center mb-6 shadow-sm">
-          <div className="flex items-center gap-2">
-            <button onClick={()=>setView('home')} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500"><Home size={20}/></button>
-            <button onClick={toggleTheme} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500"><span className="dark:hidden"><Moon size={20}/></span><span className="hidden dark:block"><Sun size={20}/></span></button>
-            {canInstall && (
-              <button onClick={triggerInstall} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-emerald-500 animate-pulse" title="تثبيت التطبيق"><Download size={20}/></button>
-            )}
-          </div>
-          <div className="absolute left-1/2 -translate-x-1/2 font-black text-emerald-600 dark:text-brand-accent text-2xl">Zomraa</div>
-          <div className="flex items-center gap-2">
-            <button onClick={()=>setShowNotifs(true)} className="relative w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500"><Bell size={20}/>{unread>0&&<span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unread>9?'+9':unread}</span>}</button>
-            <button onClick={()=>setShowAbout(true)} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500"><HelpCircle size={20}/></button>
-          </div>
-        </div>
-        <AboutModal isOpen={showAbout} onClose={()=>setShowAbout(false)}/>
-        <NotificationsModal isOpen={showNotifs} onClose={()=>setShowNotifs(false)} notifications={safe} markAsRead={markAsRead} deleteNotification={deleteNotification} rejectRequest={rejectRequest} showNotification={showNotification} user={user} userProfile={userProfile}/>
-      </>);
+function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNotification,rejectRequest,showNotification,user,userProfile}){
+  const [showAbout,setShowAbout]=useState(false); 
+  const [showNotifs,setShowNotifs]=useState(false);
+  const safe=Array.isArray(notifications)?notifications:[];
+  const unread=safe.filter(n=>!n.read).length;
+  const [isInstalled, setIsInstalled] = useState(false);
+  
+  // التحقق إذا كان التطبيق مثبتاً مسبقاً
+  useEffect(() => {
+    const checkInstalled = () => {
+      const standalone = window.matchMedia('(display-mode: standalone)').matches;
+      const iosStandalone = window.navigator.standalone === true;
+      setIsInstalled(standalone || iosStandalone);
+    };
+    checkInstalled();
+    window.addEventListener('appinstalled', () => setIsInstalled(true));
+    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    mediaQuery.addEventListener('change', checkInstalled);
+    return () => {
+      window.removeEventListener('appinstalled', () => setIsInstalled(true));
+      mediaQuery.removeEventListener('change', checkInstalled);
+    };
+  }, []);
+  
+  // عند الضغط على زر التثبيت
+  const triggerInstall = () => {
+    // إذا كان there's a native install prompt
+    if (window._deferredPWAInstall) {
+      window._deferredPWAInstall.prompt();
+      window._deferredPWAInstall.userChoice.then((result) => {
+        console.log('[PWA] User choice:', result.outcome);
+        window._deferredPWAInstall = null;
+      });
+      return;
     }
+    
+    // iOS: إظهار التعليمات
+    const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+    if (isIOS) {
+      alert('لتثبيت التطبيق:\n\n1️⃣ اضغط على زر المشاركة 📤 في المتصفح\n2️⃣ اختر "إضافة إلى الشاشة الرئيسية"\n3️⃣ اضغط "إضافة"');
+      return;
+    }
+    
+    // Android/Desktop: إظهار النافذة المنبثقة
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) {
+      banner.style.display = 'block';
+    }
+  };
+  
+  return (<>
+    <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b px-4 py-4 flex justify-between items-center mb-6 shadow-sm">
+      <div className="flex items-center gap-2">
+        <button onClick={()=>setView('home')} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500"><Home size={20}/></button>
+        <button onClick={toggleTheme} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500">
+          <span className="dark:hidden"><Moon size={20}/></span>
+          <span className="hidden dark:block"><Sun size={20}/></span>
+        </button>
+        {/* ✅ زر التثبيت — ظاهر دائماً ما لم يكن التطبيق مثبتاً */}
+        {!isInstalled && (
+          <button 
+            onClick={triggerInstall} 
+            className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all animate-pulse"
+            title="تثبيت التطبيق على الشاشة الرئيسية"
+          >
+            <Download size={20}/>
+          </button>
+        )}
+      </div>
+      <div className="absolute left-1/2 -translate-x-1/2 font-black text-emerald-600 dark:text-brand-accent text-2xl">Zomraa</div>
+      <div className="flex items-center gap-2">
+        <button onClick={()=>setShowNotifs(true)} className="relative w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500">
+          <Bell size={20}/>
+          {unread>0&&<span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unread>9?'+9':unread}</span>}
+        </button>
+        <button onClick={()=>setShowAbout(true)} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500"><HelpCircle size={20}/></button>
+      </div>
+    </div>
+    <AboutModal isOpen={showAbout} onClose={()=>setShowAbout(false)}/>
+    <NotificationsModal isOpen={showNotifs} onClose={()=>setShowNotifs(false)} notifications={safe} markAsRead={markAsRead} deleteNotification={deleteNotification} rejectRequest={rejectRequest} showNotification={showNotification} user={user} userProfile={userProfile}/>
+  </>);
+}
 
     // BottomNav
     function BottomNav({view,setView,user}){
