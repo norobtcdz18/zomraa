@@ -641,58 +641,114 @@
     const root = createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
-
-  <!-- ========== PWA Service Worker & Install Handler ========== -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/firebase-messaging-sw.js').then(r => console.log('[SW] FCM SW registered:', r.scope)).catch(() => console.warn('[SW] No FCM SW'));
-        navigator.serviceWorker.register('/sw.js').then(r => console.log('[SW] App SW registered:', r.scope)).catch(() => {});
-      });
-    }
-
-    let deferredPrompt;
-    const installBanner = document.getElementById('pwa-install-banner');
-    const installBtn = document.getElementById('pwa-install-btn');
-
-    function isAppInstalled() {
-      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    }
-
-    function showInstallBanner() {
-      if (installBanner && !isAppInstalled()) {
-        const dismissed = localStorage.getItem('pwa-install-dismissed');
-        if (dismissed && Date.now() - parseInt(dismissed) < 24*60*60*1000) return;
-        installBanner.style.display = 'block';
-      }
-    }
-
-    window.dismissInstallBanner = function() {
-      if (installBanner) { installBanner.style.display = 'none'; localStorage.setItem('pwa-install-dismissed', String(Date.now())); }
-    };
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      window._deferredPWAInstall = deferredPrompt;
-      setTimeout(showInstallBanner, 2000);
+<!-- ========== PWA Service Worker & Install Handler ========== -->
+<script>
+  // Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/zomraa/firebase-messaging-sw.js').then(r => console.log('[SW] FCM SW registered:', r.scope)).catch(() => console.warn('[SW] No FCM SW'));
+      navigator.serviceWorker.register('/zomraa/sw.js').then(r => console.log('[SW] App SW registered:', r.scope)).catch(() => {});
     });
+  }
 
-    if (installBtn) {
-      installBtn.addEventListener('click', async () => {
-        if (!deferredPrompt) {
-          if (/iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase())) alert('لتثبيت التطبيق:\n\n1️⃣ اضغط على زر المشاركة 📤\n2️⃣ اختر "إضافة إلى الشاشة الرئيسية"');
-          dismissInstallBanner();
-          return;
-        }
+  let deferredPrompt;
+  const installBanner = document.getElementById('pwa-install-banner');
+  const installBtn = document.getElementById('pwa-install-btn');
+
+  function isAppInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+
+  function showInstallBanner() {
+    if (installBanner && !isAppInstalled()) {
+      const dismissed = localStorage.getItem('pwa-install-dismissed');
+      if (dismissed && Date.now() - parseInt(dismissed) < 24 * 60 * 60 * 1000) return;
+      installBanner.style.display = 'block';
+    }
+  }
+
+  window.dismissInstallBanner = function() {
+    if (installBanner) {
+      installBanner.style.display = 'none';
+      localStorage.setItem('pwa-install-dismissed', String(Date.now()));
+    }
+  };
+
+  // تلقّي حدث beforeinstallprompt من المتصفح
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    window._deferredPWAInstall = deferredPrompt;
+    console.log('✅ [PWA] beforeinstallprompt fired - install is available!');
+    // أظهر النافذة المنبثقة بعد 3 ثواني
+    setTimeout(showInstallBanner, 3000);
+  });
+
+  // زر التثبيت في النافذة المنبثقة
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      // إذا beforeinstallprompt متوفر
+      if (deferredPrompt) {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') { deferredPrompt = null; window._deferredPWAInstall = null; }
+        console.log('[PWA] User choice:', outcome);
+        if (outcome === 'accepted') {
+          deferredPrompt = null;
+          window._deferredPWAInstall = null;
+        }
         dismissInstallBanner();
-      });
-    }
+        return;
+      }
 
-    window.addEventListener('appinstalled', () => { deferredPrompt = null; window._deferredPWAInstall = null; dismissInstallBanner(); });
-  </script>
+      // ===== خيارات بديلة حسب الجهاز =====
+      const ua = navigator.userAgent.toLowerCase();
+      const isIOS = /iphone|ipad|ipod/.test(ua);
+      const isAndroid = /android/.test(ua);
+      const isChrome = /chrome/.test(ua);
+      const isDesktop = !isIOS && !isAndroid;
+
+      if (isIOS) {
+        alert('لتثبيت التطبيق على iOS:\n\n1️⃣ اضغط على زر المشاركة 📤 في الأسفل\n2️⃣ اختر "إضافة إلى الشاشة الرئيسية"\n3️⃣ اضغط "إضافة"');
+      } else if (isAndroid && isChrome) {
+        alert('لتثبيت التطبيق على أندرويد:\n\n1️⃣ اضغط على ⁝ (3 نقاط) في الأعلى\n2️⃣ اختر "تثبيت التطبيق" أو "أضف إلى الشاشة الرئيسية"');
+      } else if (isDesktop && isChrome) {
+        alert('لتثبيت التطبيق:\n\n1️⃣ اضغط على أيقونة ⬇️ في شريط العنوان\n2️⃣ أو ⁝ ← "تثبيت Zomraa..."');
+      } else {
+        // محاولة أخيرة: افتح النافذة الأصلية
+        try {
+          // بعض المتصفحات توفر install() API مباشر
+          if (window.InstallTrigger) {
+            window.InstallTrigger.install();
+          } else {
+            alert('افتح الموقع من Chrome على هاتفك أو كمبيوترك لتتمكن من تثبيت التطبيق.');
+          }
+        } catch(e) {
+          alert('افتح الموقع من Chrome لتتمكن من تثبيت التطبيق.');
+        }
+      }
+
+      dismissInstallBanner();
+    });
+  }
+
+  // عند نجاح التثبيت
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    window._deferredPWAInstall = null;
+    dismissInstallBanner();
+    console.log('🎉 [PWA] App installed successfully!');
+  });
+
+  // أظهر النافذة بعد 5 ثواني تلقائياً (احتياط إذا beforeinstallprompt بطيء)
+  setTimeout(() => {
+    if (!isAppInstalled() && !deferredPrompt) {
+      const dismissed = localStorage.getItem('pwa-install-dismissed');
+      if (!dismissed || Date.now() - parseInt(dismissed) >= 24 * 60 * 60 * 1000) {
+        // لا نظهرها تلقائياً إذا لم نضمن وجود beforeinstallprompt
+        // لكن نترك الزر في الهيدر يشتغل
+      }
+    }
+  }, 5000);
+</script>
 </body>
 </html>
