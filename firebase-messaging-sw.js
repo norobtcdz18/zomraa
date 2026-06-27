@@ -22,8 +22,8 @@ messaging.onBackgroundMessage((payload) => {
 
   const options = {
     body: body,
-    icon: '/icon-192x192.png',
-    badge: '/icon-72x72.png',
+    icon: '/zomraa/icon-192x192.png',
+badge: '/zomraa/icon-72x72.png',
     dir: 'rtl',
     tag: payload.data?.tag || 'default',
     vibrate: [200, 100, 200],
