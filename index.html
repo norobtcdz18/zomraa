@@ -6,25 +6,31 @@
   <title>Zomraa v2 - قطرة حياة</title>
 
   <!-- ========== PWA Meta Tags ========== -->
+  <meta name="application-name" content="Zomraa">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Zomraa">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#CDEB57">
+  <meta name="msapplication-TileColor" content="#CDEB57">
+  <meta name="msapplication-starturl" content="/">
+  <meta name="description" content="تطبيق خيري وطبي متكامل يربط المتبرعين بالمحتاجين - منصة للتبرع بالدم والأدوية">
 
-<meta name="application-name" content="Zomraa">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Zomraa">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#CDEB57">
-<meta name="msapplication-TileColor" content="#CDEB57">
-<meta name="msapplication-starturl" content="/">
-<meta name="description" content="تطبيق خيري وطبي متكامل يربط المتبرعين بالمحتاجين">
-<!-- Apple Touch Icons (في المجلد الرئيسي) -->
-<link rel="apple-touch-icon" href="/icon-152x152.png">
-<link rel="apple-touch-icon" sizes="152x152" href="/icon-152x152.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/icon-180x180.png">
-<link rel="apple-touch-icon" sizes="167x167" href="/icon-167x167.png">
-<!-- Manifest -->
-<link rel="manifest" href="/manifest.json">
-<!-- iOS Splash Screen -->
-<link rel="apple-touch-startup-image" href="/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+  <!-- Favicon -->
+  <link rel="icon" href="/icon-72x72.png">
+
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="/icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icon-180x180.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/icon-167x167.png">
+
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json">
+
+  <!-- iOS Splash Screen -->
+  <link rel="apple-touch-startup-image" href="/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+
   <!-- ========== Tailwind & Fonts ========== -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -49,6 +55,7 @@
         "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
         "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
         "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+        "firebase/messaging": "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js",
         "lucide-react": "https://esm.sh/lucide-react@0.344.0"
       }
     }
@@ -95,263 +102,26 @@
       <div id="install-card" style="width:100%;max-width:420px;background:#ffffff;border:1px solid #e2e8f0;border-radius:2rem;padding:28px 24px 24px;text-align:center;animation:slideUp 0.5s ease-out forwards;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);position:relative;">
         <button onclick="dismissInstallBanner()" style="position:absolute;top:12px;left:12px;width:36px;height:36px;border-radius:50%;border:none;background:#f1f5f9;color:#64748b;cursor:pointer;font-size:18px;">✕</button>
         <div style="width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#10b981,#CDEB57);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;animation:pulse-glow 2s ease-in-out infinite;">
-          <span style="font-size:32px;">🩸</span>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <h3 style="font-family:'Cairo',sans-serif;font-size:1.35rem;font-weight:900;color:#1e293b;margin:0 0 6px;">ثبّت التطبيق على هاتفك 📱</h3>
-        <p style="font-family:'Cairo',sans-serif;font-size:0.875rem;color:#64748b;margin:0 0 10px;line-height:1.6;">احصل على وصول أسرع لتطبيق Zomraa مباشرة من الشاشة الرئيسية</p>
+        <p style="font-family:'Cairo',sans-serif;font-size:0.875rem;color:#64748b;margin:0 0 10px;line-height:1.6;">احصل على وصول أسرع لتطبيق Zomraa مباشرة من الشاشة الرئيسية بدون الحاجة لفتح المتصفح</p>
         <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:20px;">
           <span style="background:#ecfdf5;color:#059669;padding:4px 12px;border-radius:20px;font-size:0.7rem;font-weight:700;font-family:'Cairo',sans-serif;">🚀 فتح سريع</span>
           <span style="background:#eff6ff;color:#2563eb;padding:4px 12px;border-radius:20px;font-size:0.7rem;font-weight:700;font-family:'Cairo',sans-serif;">📶 دون إنترنت</span>
-          <span style="background:#fef3c7;color:#d97706;padding:4px 12px;border-radius:20px;font-size:0.7rem;font-weight:700;font-family:'Cairo',sans-serif;">🔔 إشعارات</span>
+          <span style="background:#fef3c7;color:#d97706;padding:4px 12px;border-radius:20px;font-size:0.7rem;font-weight:700;font-family:'Cairo',sans-serif;">🔔 إشعارات فورية</span>
         </div>
-        <button id="pwa-install-btn" style="width:100%;padding:14px;border:none;border-radius:16px;background:#CDEB57;color:#1e293b;font-family:'Cairo',sans-serif;font-size:1.05rem;font-weight:900;cursor:pointer;box-shadow:0 4px 15px rgba(205,235,87,0.4);">⬇️ تثبيت التطبيق</button>
+        <button id="pwa-install-btn" style="width:100%;padding:14px;border:none;border-radius:16px;background:#CDEB57;color:#1e293b;font-family:'Cairo',sans-serif;font-size:1.05rem;font-weight:900;cursor:pointer;box-shadow:0 4px 15px rgba(205,235,87,0.4);display:flex;align-items:center;justify-content:center;gap:8px;">
+          ⬇️ تثبيت التطبيق
+        </button>
         <button onclick="dismissInstallBanner()" style="width:100%;padding:12px;border:none;background:transparent;color:#94a3b8;font-family:'Cairo',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;margin-top:8px;">لاحقاً</button>
       </div>
     </div>
   </div>
 
-  <!-- ========== PWA Icon Generator + Manifest ========== -->
-  <script>
-    (function() {
-      // Icon sizes needed for PWA
-      const ICON_SIZES = [72, 96, 128, 144, 152, 167, 180, 192, 384, 512];
-      const SPLASH_SIZE = { w: 1125, h: 2436 };
-      const iconDataUrls = {};
-
-      // Draw the Zomraa icon on canvas
-      function drawIcon(canvas, size) {
-        const ctx = canvas.getContext('2d');
-        const s = size;
-        canvas.width = s;
-        canvas.height = s;
-
-        // Clear
-        ctx.clearRect(0, 0, s, s);
-
-        // Rounded rect background with gradient
-        const radius = s * 0.22;
-        const grad = ctx.createLinearGradient(0, 0, s, s);
-        grad.addColorStop(0, '#10b981');
-        grad.addColorStop(1, '#CDEB57');
-
-        ctx.beginPath();
-        ctx.moveTo(radius, 0);
-        ctx.lineTo(s - radius, 0);
-        ctx.quadraticCurveTo(s, 0, s, radius);
-        ctx.lineTo(s, s - radius);
-        ctx.quadraticCurveTo(s, s, s - radius, s);
-        ctx.lineTo(radius, s);
-        ctx.quadraticCurveTo(0, s, 0, s - radius);
-        ctx.lineTo(0, radius);
-        ctx.quadraticCurveTo(0, 0, radius, 0);
-        ctx.closePath();
-        ctx.fillStyle = grad;
-        ctx.fill();
-
-        // Heart shape
-        const cx = s / 2;
-        const cy = s * 0.42;
-        const hs = s * 0.38;
-
-        function drawHeart(x, y, size) {
-          ctx.beginPath();
-          const topCurveHeight = size * 0.3;
-          ctx.moveTo(x, y + topCurveHeight);
-          // Left curve
-          ctx.bezierCurveTo(x, y, x - size / 2, y, x - size / 2, y + topCurveHeight);
-          // Left to bottom
-          ctx.bezierCurveTo(x - size / 2, y + (size + topCurveHeight) / 2, x, y + (size + topCurveHeight) / 1.3, x, y + size);
-          // Right to bottom
-          ctx.bezierCurveTo(x, y + (size + topCurveHeight) / 1.3, x + size / 2, y + (size + topCurveHeight) / 2, x + size / 2, y + topCurveHeight);
-          // Right curve back
-          ctx.bezierCurveTo(x + size / 2, y, x, y, x, y + topCurveHeight);
-          ctx.closePath();
-        }
-
-        // Draw heart with white fill
-        drawHeart(cx, cy, hs);
-        ctx.fillStyle = 'rgba(255,255,255,0.95)';
-        ctx.fill();
-
-        // Blood drop inside heart
-        const dropCx = cx;
-        const dropCy = cy + hs * 0.23;
-        const dropSize = hs * 0.35;
-        
-        ctx.beginPath();
-        // Teardrop shape
-        const dropTop = dropCy - dropSize;
-        ctx.arc(dropCx, dropCy, dropSize * 0.5, 0, Math.PI * 2);
-        ctx.moveTo(dropCx - dropSize * 0.4, dropTop + dropSize * 0.1);
-        ctx.quadraticCurveTo(dropCx, dropTop - dropSize * 0.6, dropCx + dropSize * 0.4, dropTop + dropSize * 0.1);
-        ctx.fillStyle = '#ef4444';
-        ctx.fill();
-
-        return canvas;
-      }
-
-      // Draw splash screen
-      function drawSplash(canvas, w, h) {
-        const ctx = canvas.getContext('2d');
-        canvas.width = w;
-        canvas.height = h;
-
-        // Background
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, '#10b981');
-        grad.addColorStop(1, '#047857');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-
-        // Center icon
-        const iconSize = w * 0.25;
-        const iconCanvas = document.createElement('canvas');
-        drawIcon(iconCanvas, iconSize);
-        ctx.drawImage(iconCanvas, w / 2 - iconSize / 2, h * 0.32, iconSize, iconSize);
-
-        // App name
-        ctx.fillStyle = 'white';
-        ctx.font = `bold ${w * 0.11}px Cairo, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText('Zomraa', w / 2, h * 0.55);
-
-        // Subtitle
-        ctx.font = `${w * 0.04}px Cairo, sans-serif`;
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        ctx.fillText('قطرة حياة', w / 2, h * 0.61);
-
-        // Loading dots
-        ctx.font = `${w * 0.05}px sans-serif`;
-        ctx.fillText('•••', w / 2, h * 0.72);
-
-        return canvas;
-      }
-
-      // Generate all icons
-      function generateAllIcons() {
-        ICON_SIZES.forEach(size => {
-          const canvas = document.createElement('canvas');
-          drawIcon(canvas, size);
-          iconDataUrls[size] = canvas.toDataURL('image/png');
-        });
-
-        // Generate splash
-        const splashCanvas = document.createElement('canvas');
-        drawSplash(splashCanvas, SPLASH_SIZE.w, SPLASH_SIZE.h);
-        iconDataUrls['splash'] = splashCanvas.toDataURL('image/png');
-
-        return iconDataUrls;
-      }
-
-      // Create and set manifest
-      function createManifest(icons) {
-        const manifestIcons = ICON_SIZES.map(size => ({
-          src: icons[size],
-          sizes: `${size}x${size}`,
-          type: 'image/png',
-          purpose: (size === 192 || size === 512) ? 'any maskable' : 'any'
-        }));
-
-        const manifest = {
-          name: 'Zomraa - قطرة حياة',
-          short_name: 'Zomraa',
-          description: 'تطبيق خيري وطبي متكامل يربط المتبرعين بالمحتاجين',
-          start_url: '/',
-          scope: '/',
-          display: 'standalone',
-          orientation: 'portrait-primary',
-          background_color: '#F8FAFC',
-          theme_color: '#CDEB57',
-          lang: 'ar',
-          dir: 'rtl',
-          icons: manifestIcons,
-          categories: ['medical', 'health', 'social'],
-          prefer_related_applications: false
-        };
-
-        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-        const manifestUrl = URL.createObjectURL(blob);
-
-        // Create manifest link
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = manifestUrl;
-        document.head.appendChild(link);
-
-        return manifestUrl;
-      }
-
-      // Set Apple touch icons
-      function setAppleIcons(icons) {
-        const sizes = [152, 167, 180];
-        sizes.forEach(size => {
-          if (icons[size]) {
-            let link = document.querySelector(`link[rel="apple-touch-icon"][sizes="${size}x${size}"]`);
-            if (!link) {
-              link = document.createElement('link');
-              link.rel = 'apple-touch-icon';
-              link.setAttribute('sizes', `${size}x${size}`);
-              document.head.appendChild(link);
-            }
-            link.href = icons[size];
-          }
-        });
-
-        // Default apple-touch-icon (152)
-        let defaultLink = document.querySelector('link[rel="apple-touch-icon"]:not([sizes])');
-        if (!defaultLink && icons[152]) {
-          defaultLink = document.createElement('link');
-          defaultLink.rel = 'apple-touch-icon';
-          document.head.appendChild(defaultLink);
-        }
-        if (defaultLink && icons[152]) {
-          defaultLink.href = icons[152];
-        }
-
-        // Splash screen
-        if (icons['splash']) {
-          let splash = document.querySelector('link[rel="apple-touch-startup-image"]');
-          if (!splash) {
-            splash = document.createElement('link');
-            splash.rel = 'apple-touch-startup-image';
-            splash.setAttribute('media', '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)');
-            document.head.appendChild(splash);
-          }
-          splash.href = icons['splash'];
-        }
-      }
-
-      // Update favicon
-      function setFavicon(icons) {
-        if (icons[72]) {
-          const favicon = document.getElementById('dynamic-favicon');
-          if (favicon) favicon.href = icons[72];
-        }
-      }
-
-      // Run generation
-      try {
-        const icons = generateAllIcons();
-        createManifest(icons);
-        setAppleIcons(icons);
-        setFavicon(icons);
-        // Store globally for SW use
-        window.__PWA_ICONS = icons;
-        console.log('[PWA] ✅ All icons generated automatically (single file)');
-      } catch (e) {
-        console.warn('[PWA] Icon generation failed, using fallback:', e);
-      }
-    })();
-  </script>
-
-  <!-- ========== Dark mode support for install banner ========== -->
-  <style id="pwa-dark-style">
-    html.dark #install-card {
-      background: rgba(30, 41, 59, 0.95) !important;
-      backdrop-filter: blur(20px) !important;
-      -webkit-backdrop-filter: blur(20px) !important;
-      border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    }
+  <!-- ========== Dark mode banner support ========== -->
+  <style>
+    html.dark #install-card { background: rgba(30,41,59,0.95) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.08) !important; }
     html.dark #install-card h3 { color: #f8fafc !important; }
     html.dark #install-card p { color: #94a3b8 !important; }
   </style>
@@ -363,11 +133,13 @@
     import { initializeApp } from 'firebase/app';
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, deleteUser, sendPasswordResetEmail } from 'firebase/auth';
     import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, addDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+    import { getMessaging, getToken, onMessage } from 'firebase/messaging';
     import { Search, MapPin, Map, Plus, User, Phone, Copy, CheckCircle2, AlertTriangle, X, Loader2, Droplet, Lock, Mail, Eye, EyeOff, ArrowRight, LogOut, Power, Edit2, Save, Trash2, Plane, Info, HelpCircle, Moon, Sun, Home, Heart, CalendarClock, ShieldCheck, RotateCcw, Stethoscope, Pill, Clock, HeartHandshake, Star, Flag, FileText, Ban, AlertOctagon, Wallet, Package, ChevronDown, ChevronUp, MessageSquare, Bell, HeartPulse, EyeOff as EyeOffIcon, Send, Download } from 'lucide-react';
 
     const firebaseConfig = { apiKey: "AIzaSyANXo96l5_hP1iTH_K8TaYixdGHJwr6x-0", authDomain: "blod-6a25b.firebaseapp.com", projectId: "blod-6a25b", storageBucket: "blod-6a25b.firebasestorage.app", messagingSenderId: "766563585970", appId: "1:766563585970:web:ad99353f2dbcbf759a1eab" };
     let app; try { app = initializeApp(firebaseConfig); } catch (e) {}
     const auth = getAuth(app); const db = getFirestore(app);
+    let messaging; try { messaging = getMessaging(app); } catch(e) {}
 
     const DONORS_COLLECTION = "donors", MEDICINES_COLLECTION = "medicines", PHARMACIES_COLLECTION = "pharmacies", DOCTORS_COLLECTION = "doctors", REPORTS_COLLECTION = "reports", NOTIFICATIONS_COLLECTION = "notifications", MAIL_COLLECTION = "mail", ADMIN_REQUESTS_COLLECTION = "admin_requests";
     const COOLDOWN_DAYS = 90;
@@ -457,88 +229,76 @@
       );
     }
 
-function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNotification,rejectRequest,showNotification,user,userProfile}){
-  const [showAbout,setShowAbout]=useState(false); 
-  const [showNotifs,setShowNotifs]=useState(false);
-  const safe=Array.isArray(notifications)?notifications:[];
-  const unread=safe.filter(n=>!n.read).length;
-  const [isInstalled, setIsInstalled] = useState(false);
-  
-  // التحقق إذا كان التطبيق مثبتاً مسبقاً
-  useEffect(() => {
-    const checkInstalled = () => {
-      const standalone = window.matchMedia('(display-mode: standalone)').matches;
-      const iosStandalone = window.navigator.standalone === true;
-      setIsInstalled(standalone || iosStandalone);
-    };
-    checkInstalled();
-    window.addEventListener('appinstalled', () => setIsInstalled(true));
-    const mediaQuery = window.matchMedia('(display-mode: standalone)');
-    mediaQuery.addEventListener('change', checkInstalled);
-    return () => {
-      window.removeEventListener('appinstalled', () => setIsInstalled(true));
-      mediaQuery.removeEventListener('change', checkInstalled);
-    };
-  }, []);
-  
-  // عند الضغط على زر التثبيت
-  const triggerInstall = () => {
-    // إذا كان there's a native install prompt
-    if (window._deferredPWAInstall) {
-      window._deferredPWAInstall.prompt();
-      window._deferredPWAInstall.userChoice.then((result) => {
-        console.log('[PWA] User choice:', result.outcome);
-        window._deferredPWAInstall = null;
-      });
-      return;
+    // ========== AppHeader (مع زر التثبيت الظاهر دائماً) ==========
+    function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNotification,rejectRequest,showNotification,user,userProfile}){
+      const [showAbout,setShowAbout]=useState(false); 
+      const [showNotifs,setShowNotifs]=useState(false);
+      const safe=Array.isArray(notifications)?notifications:[];
+      const unread=safe.filter(n=>!n.read).length;
+      const [isInstalled, setIsInstalled] = useState(false);
+      
+      useEffect(() => {
+        const checkInstalled = () => {
+          const standalone = window.matchMedia('(display-mode: standalone)').matches;
+          const iosStandalone = window.navigator.standalone === true;
+          setIsInstalled(standalone || iosStandalone);
+        };
+        checkInstalled();
+        window.addEventListener('appinstalled', () => setIsInstalled(true));
+        const mediaQuery = window.matchMedia('(display-mode: standalone)');
+        mediaQuery.addEventListener('change', checkInstalled);
+        return () => {
+          window.removeEventListener('appinstalled', () => setIsInstalled(true));
+          mediaQuery.removeEventListener('change', checkInstalled);
+        };
+      }, []);
+      
+      const triggerInstall = () => {
+        if (window._deferredPWAInstall) {
+          window._deferredPWAInstall.prompt();
+          window._deferredPWAInstall.userChoice.then((result) => {
+            console.log('[PWA] User choice:', result.outcome);
+            window._deferredPWAInstall = null;
+          });
+          return;
+        }
+        const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+        if (isIOS) {
+          alert('لتثبيت التطبيق:\n\n1️⃣ اضغط على زر المشاركة 📤 في المتصفح\n2️⃣ اختر "إضافة إلى الشاشة الرئيسية"\n3️⃣ اضغط "إضافة"');
+          return;
+        }
+        const banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.style.display = 'block';
+      };
+      
+      return (<>
+        <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b px-4 py-4 flex justify-between items-center mb-6 shadow-sm">
+          <div className="flex items-center gap-2">
+            <button onClick={()=>setView('home')} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500"><Home size={20}/></button>
+            <button onClick={toggleTheme} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500">
+              <span className="dark:hidden"><Moon size={20}/></span>
+              <span className="hidden dark:block"><Sun size={20}/></span>
+            </button>
+            {/* زر التثبيت — ظاهر دائماً مالم يكن مثبتاً */}
+            {!isInstalled && (
+              <button onClick={triggerInstall} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all animate-pulse" title="تثبيت التطبيق">
+                <Download size={20}/>
+              </button>
+            )}
+          </div>
+          <div className="absolute left-1/2 -translate-x-1/2 font-black text-emerald-600 dark:text-brand-accent text-2xl">Zomraa</div>
+          <div className="flex items-center gap-2">
+            <button onClick={()=>setShowNotifs(true)} className="relative w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500">
+              <Bell size={20}/>
+              {unread>0&&<span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unread>9?'+9':unread}</span>}
+            </button>
+            <button onClick={()=>setShowAbout(true)} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500"><HelpCircle size={20}/></button>
+          </div>
+        </div>
+        <AboutModal isOpen={showAbout} onClose={()=>setShowAbout(false)}/>
+        <NotificationsModal isOpen={showNotifs} onClose={()=>setShowNotifs(false)} notifications={safe} markAsRead={markAsRead} deleteNotification={deleteNotification} rejectRequest={rejectRequest} showNotification={showNotification} user={user} userProfile={userProfile}/>
+      </>);
     }
-    
-    // iOS: إظهار التعليمات
-    const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-    if (isIOS) {
-      alert('لتثبيت التطبيق:\n\n1️⃣ اضغط على زر المشاركة 📤 في المتصفح\n2️⃣ اختر "إضافة إلى الشاشة الرئيسية"\n3️⃣ اضغط "إضافة"');
-      return;
-    }
-    
-    // Android/Desktop: إظهار النافذة المنبثقة
-    const banner = document.getElementById('pwa-install-banner');
-    if (banner) {
-      banner.style.display = 'block';
-    }
-  };
-  
-  return (<>
-    <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b px-4 py-4 flex justify-between items-center mb-6 shadow-sm">
-      <div className="flex items-center gap-2">
-        <button onClick={()=>setView('home')} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500"><Home size={20}/></button>
-        <button onClick={toggleTheme} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500">
-          <span className="dark:hidden"><Moon size={20}/></span>
-          <span className="hidden dark:block"><Sun size={20}/></span>
-        </button>
-        {/* ✅ زر التثبيت — ظاهر دائماً ما لم يكن التطبيق مثبتاً */}
-        {!isInstalled && (
-          <button 
-            onClick={triggerInstall} 
-            className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all animate-pulse"
-            title="تثبيت التطبيق على الشاشة الرئيسية"
-          >
-            <Download size={20}/>
-          </button>
-        )}
-      </div>
-      <div className="absolute left-1/2 -translate-x-1/2 font-black text-emerald-600 dark:text-brand-accent text-2xl">Zomraa</div>
-      <div className="flex items-center gap-2">
-        <button onClick={()=>setShowNotifs(true)} className="relative w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500">
-          <Bell size={20}/>
-          {unread>0&&<span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unread>9?'+9':unread}</span>}
-        </button>
-        <button onClick={()=>setShowAbout(true)} className="w-10 h-10 glass-panel rounded-full flex items-center justify-center text-slate-500"><HelpCircle size={20}/></button>
-      </div>
-    </div>
-    <AboutModal isOpen={showAbout} onClose={()=>setShowAbout(false)}/>
-    <NotificationsModal isOpen={showNotifs} onClose={()=>setShowNotifs(false)} notifications={safe} markAsRead={markAsRead} deleteNotification={deleteNotification} rejectRequest={rejectRequest} showNotification={showNotification} user={user} userProfile={userProfile}/>
-  </>);
-}
 
     // BottomNav
     function BottomNav({view,setView,user}){
@@ -590,7 +350,7 @@ function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNo
       return (<div className={`glass-panel rounded-[2rem] p-5 mb-4 mx-1 transition-all ${isCompleted?'opacity-70 grayscale':'hover:border-emerald-200'} ${isInProgress&&(isMine||amIFulfiller)?'ring-2 ring-indigo-500/50':''}`}>{medicine.isUrgent&&!isCompleted&&<div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-1 rounded-full text-[10px] font-black flex items-center gap-1 z-10 animate-pulse"><AlertOctagon size={12}/> مستعجل</div>}<div className="flex justify-between items-start mb-3 mt-2">{(isPending||isCompleted)&&isMine?<button onClick={()=>onDelete(medicine.id)} className="p-2 bg-red-50 text-red-500 rounded-full"><Trash2 size={16}/></button>:<div className="w-8"/>}<div className="flex-1 text-right px-2 overflow-hidden"><h3 className="font-black text-lg truncate">{medicine.medicineName}</h3><div className="flex items-center justify-end gap-1 text-xs text-slate-400 mt-1"><span>{dateStr}</span><Clock size={12}/><span className="mx-1">•</span><span className="truncate">{medicine.requesterName}</span><User size={12}/></div></div><div className={`border w-12 h-12 rounded-xl flex items-center justify-center ${isPending?'bg-orange-50 text-orange-500':isInProgress?'bg-indigo-50 text-indigo-500':'bg-slate-100 text-emerald-500'}`}><Pill size={24}/></div></div><button onClick={()=>setShowDetails(!showDetails)} className="w-full flex items-center justify-center gap-1 py-2 mb-3 bg-slate-50 rounded-xl text-xs font-bold"><Info size={14}/> {showDetails?'إخفاء التفاصيل':'عرض التفاصيل'} {showDetails?<ChevronUp size={14}/>:<ChevronDown size={14}/>}</button>{showDetails&&(<div className="animate-fadeIn mb-4"><div className="grid grid-cols-2 gap-2 mb-3 text-right"><div className="bg-slate-50 p-2.5 rounded-xl"><span className="text-[10px] text-slate-400">الكمية</span><p className="text-sm font-black">{medicine.quantity||'غير محدد'}</p></div><div className="bg-slate-50 p-2.5 rounded-xl"><span className="text-[10px] text-slate-400">الوصفة</span><p className="text-sm font-black">{medicine.hasPrescription==='yes'?'متوفرة':'غير متوفرة'}</p></div><div className="bg-slate-50 p-2.5 rounded-xl"><span className="text-[10px] text-slate-400">الدفع</span><p className="text-sm font-black">{medicine.paymentStatus==='buy'?'للشراء':'صدقة'}</p></div><div className="bg-slate-50 p-2.5 rounded-xl"><span className="text-[10px] text-slate-400">بالصيدليات</span><p className="text-sm font-black">{medicine.availability==='unavailable'?'مقطوع':'غالي'}</p></div></div>{medicine.description&&<div className="bg-slate-50 p-3 rounded-xl text-sm"><span className="text-[10px] text-slate-400">ملاحظات:</span><p className="whitespace-pre-line">{medicine.description}</p></div>}</div>)}<div className="flex flex-col gap-2 border-t pt-3 border-slate-100">{isPending&&!isMine&&medicine.approved&&<button onClick={()=>onFulfill(medicine.id,userProfile)} className="w-full py-3 bg-brand-accent text-slate-900 rounded-xl font-bold flex items-center justify-center gap-2"><HeartHandshake size={18}/> أتعهد بتوفير الدواء</button>}{isPending&&isMine&&!medicine.approved&&<div className="w-full py-3 bg-orange-50 text-orange-600 rounded-xl text-center text-sm flex items-center justify-center gap-2"><Clock size={16}/> طلبك قيد المراجعة</div>}{isPending&&isMine&&medicine.approved&&<div className="w-full py-3 bg-slate-100 text-slate-500 rounded-xl text-center text-sm">طلبك منشور، بانتظار متبرع</div>}{isInProgress&&(isMine||amIFulfiller)&&(<div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4"><div className="flex items-center justify-center gap-2 text-indigo-700 font-black mb-3 text-sm"><MessageSquare size={16}/> مساحة التواصل للتسليم</div><p className="text-center text-xs text-indigo-600 mb-4">تواصل مع {targetRole} ({targetName})</p><div className="flex items-center justify-between gap-2 mb-5">{targetPhone?<a href={`tel:${targetPhone}`} className="flex-1 bg-indigo-500 text-white py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2">اتصال<Phone size={14}/></a>:<div className="flex-1 bg-indigo-300 text-white py-3 rounded-xl text-sm">رقم غير متاح</div>}<span dir="ltr" className="text-indigo-800 font-bold bg-white px-4 py-3 rounded-xl">{targetPhone||'---'}</span></div><div className="flex gap-2"><button onClick={()=>onCancelFulfill(medicine.id)} className="flex-1 py-2 bg-white border border-red-200 text-red-500 rounded-xl text-xs font-bold">إلغاء</button><button onClick={()=>onComplete(medicine.id)} className="flex-1 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold">تم التسليم</button></div></div>)}{isInProgress&&!isMine&&!amIFulfiller&&<div className="w-full py-3 bg-slate-50 text-slate-400 rounded-xl text-center text-sm flex items-center justify-center gap-2"><Clock size={16}/> يوجد شخص يتواصل مع المريض</div>}{isCompleted&&<div className="w-full py-3 bg-emerald-50 text-emerald-600 rounded-xl text-center text-sm flex items-center justify-center gap-2"><CheckCircle2 size={16}/> تم توفير الدواء</div>}</div></div>);
     }
 
-    // ---------- HomeView ----------
+    // ========== HomeView ==========
     function HomeView({ donors=[], user, userProfile, loading, onCopyPhone, isDark, toggleTheme, setView, showNotification, notifications, markAsRead, deleteNotification, rejectRequest }) {
       const [filterBlood, setFilterBlood] = useState('الكل');
       const [reportingDonor, setReportingDonor] = useState(null);
@@ -646,7 +406,7 @@ function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNo
       );
     }
 
-    // ---------- PharmacyView ----------
+    // ========== PharmacyView ==========
     function PharmacyView({ isDark, toggleTheme, pharmacies=[], onCopyPhone, setView, notifications, markAsRead, deleteNotification, rejectRequest, showNotification, user, userProfile }) {
       const todayStr = getLocalDateString();
       const formattedDate = new Intl.DateTimeFormat('ar-DZ', { weekday:'long', year:'numeric', month:'long', day:'numeric' }).format(new Date());
@@ -665,7 +425,7 @@ function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNo
       );
     }
 
-    // ---------- DoctorsView ----------
+    // ========== DoctorsView ==========
     function DoctorsView({ doctors=[], user, isDark, toggleTheme, setView, notifications, markAsRead, deleteNotification, rejectRequest, showNotification, onCopyPhone, userProfile }) {
       const sorted = useMemo(() => {
         const safe = Array.isArray(doctors)?doctors:[];
@@ -680,7 +440,7 @@ function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNo
       );
     }
 
-    // ---------- MedicinesView ----------
+    // ========== MedicinesView ==========
     function MedicinesView({ user, userProfile, medicines=[], loading, isDark, toggleTheme, setView, showNotification, notifications, markAsRead, deleteNotification, rejectRequest }) {
       const [showAddModal, setShowAddModal] = useState(false); const [medName, setMedName] = useState(''); const [quantity, setQuantity] = useState(''); const [hasPrescription, setHasPrescription] = useState('yes'); const [paymentStatus, setPaymentStatus] = useState('charity'); const [availability, setAvailability] = useState('unavailable'); const [isUrgent, setIsUrgent] = useState(false); const [medDesc, setMedDesc] = useState(''); const [adding, setAdding] = useState(false); const [modalConfig, setModalConfig] = useState({ isOpen: false });
       const visible = useMemo(() => { const safe = Array.isArray(medicines)?medicines:[]; return safe.filter(m => m.approved===true || (user && m.requesterId===user.uid)).sort((a,b) => (b.createdAt?.toDate?.()||0) - (a.createdAt?.toDate?.()||0)); }, [medicines, user]);
@@ -702,7 +462,7 @@ function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNo
       );
     }
 
-    // ---------- LoginView ----------
+    // ========== LoginView ==========
     function LoginView({ setView, showNotification }) {
       const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [showPassword, setShowPassword] = useState(false); const [loading, setLoading] = useState(false); const [showForgot, setShowForgot] = useState(false);
       const handleLogin = async (e) => { e.preventDefault(); if(!email||!password){ showNotification('error','أدخل البريد وكلمة المرور'); return; } setLoading(true); try { await signInWithEmailAndPassword(auth, email.trim(), password); showNotification('success','تم الدخول'); setView('profile'); } catch(err){ showNotification('error', (err.code==='auth/invalid-credential'||err.code==='auth/user-not-found'||err.code==='auth/wrong-password')?'بيانات خاطئة':'خطأ في الدخول'); } finally { setLoading(false); } };
@@ -715,7 +475,7 @@ function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNo
       );
     }
 
-    // ---------- RegisterView ----------
+    // ========== RegisterView ==========
     function RegisterView({ setView, showNotification }) {
       const [form, setForm] = useState({ username:'', email:'', password:'', phone:'', neighborhood:'', municipality:'الأمير عبد القادر', bloodType:'A+' }); const [isPhoneHidden, setIsPhoneHidden] = useState(false); const [acceptTerms, setAcceptTerms] = useState(false); const [showTerms, setShowTerms] = useState(false); const [loading, setLoading] = useState(false);
       const handleSubmit = async (e) => { e.preventDefault(); if(!acceptTerms){ showNotification('error','وافق على الشروط'); return; } if(form.username.trim().length<3){ showNotification('error','الاسم قصير'); return; } if(form.phone.trim().length<10){ showNotification('error','رقم الهاتف قصير'); return; } if(form.neighborhood.trim().length<2){ showNotification('error','أدخل الحي'); return; } setLoading(true); try { const cred = await createUserWithEmailAndPassword(auth, form.email.trim(), form.password); await setDoc(doc(db, DONORS_COLLECTION, cred.user.uid), { uid: cred.user.uid, username: form.username.trim(), email: form.email.trim(), phone: form.phone.trim(), neighborhood: form.neighborhood.trim(), municipality: form.municipality, bloodType: form.bloodType, status:1, raters:[], isPhoneHidden, createdAt: serverTimestamp(), lastDonationDate: null }); showNotification('success','تم إنشاء الحساب'); setView('profile'); } catch(err){ let msg='فشل التسجيل'; if(err.code==='auth/email-already-in-use') msg='البريد مستخدم بالفعل'; else if(err.code==='auth/weak-password') msg='كلمة المرور ضعيفة'; else if(err.code==='auth/invalid-email') msg='بريد غير صحيح'; showNotification('error',msg); } finally{ setLoading(false); } };
@@ -726,8 +486,8 @@ function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNo
         </div>
       );
     }
-    // ProfileView, App, render... (same as before - continuing below)
-    // ---------- ProfileView ----------
+
+    // ========== ProfileView ==========
     function ProfileView({ user, donorData, showNotification, isDark, toggleTheme, setView, notifications, markAsRead, deleteNotification, rejectRequest }) {
       const [loading, setLoading] = useState(false); const [editPhone, setEditPhone] = useState(false); const [newPhone, setNewPhone] = useState(''); const [editUsername, setEditUsername] = useState(false); const [newUsername, setNewUsername] = useState(''); const [editNeighborhood, setEditNeighborhood] = useState(false); const [newNeighborhood, setNewNeighborhood] = useState(''); const [modalConfig, setModalConfig] = useState({ isOpen: false });
       useEffect(()=>{ if(donorData){ setNewPhone(donorData.phone||''); setNewUsername(donorData.username||''); setNewNeighborhood(donorData.neighborhood||''); } },[donorData]);
@@ -766,18 +526,102 @@ function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNo
       );
     }
 
-    // ---------- App ----------
+    // ========== App (مع FCM) ==========
     function App() {
-      const [user, setUser] = useState(null); const [userProfile, setUserProfile] = useState(null); const [donors, setDonors] = useState([]); const [medicines, setMedicines] = useState([]); const [pharmacies, setPharmacies] = useState([]); const [doctors, setDoctors] = useState([]); const [notifications, setNotifications] = useState([]); const [view, setView] = useState('home'); const [loading, setLoading] = useState(true); const [loadingMed, setLoadingMed] = useState(true); const [notification, setNotification] = useState(null); const [initializing, setInitializing] = useState(true); const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
+      const [user, setUser] = useState(null);
+      const [userProfile, setUserProfile] = useState(null);
+      const [donors, setDonors] = useState([]);
+      const [medicines, setMedicines] = useState([]);
+      const [pharmacies, setPharmacies] = useState([]);
+      const [doctors, setDoctors] = useState([]);
+      const [notifications, setNotifications] = useState([]);
+      const [view, setView] = useState('home');
+      const [loading, setLoading] = useState(true);
+      const [loadingMed, setLoadingMed] = useState(true);
+      const [notification, setNotification] = useState(null);
+      const [initializing, setInitializing] = useState(true);
+      const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
+      const [pushEnabled, setPushEnabled] = useState(false);
+
       useEffect(() => { document.documentElement.classList.toggle('dark', isDark); localStorage.setItem('theme', isDark ? 'dark' : 'light'); }, [isDark]);
-      useEffect(() => { let unsubProfile, unsubNotifs; const unsubAuth = onAuthStateChanged(auth, (currentUser) => { if (unsubProfile) { unsubProfile(); unsubProfile = null; } if (unsubNotifs) { unsubNotifs(); unsubNotifs = null; } if (currentUser) { setUser(currentUser); unsubProfile = onSnapshot(doc(db, DONORS_COLLECTION, currentUser.uid), (snap) => { setUserProfile(snap.exists() ? { id: snap.id, ...snap.data() } : null); setInitializing(false); }, () => setInitializing(false)); unsubNotifs = onSnapshot(query(collection(db, NOTIFICATIONS_COLLECTION), orderBy('createdAt','desc')), (snap) => { setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(n => n.toUserId === currentUser.uid)); }); } else { setUser(null); setUserProfile(null); setNotifications([]); setInitializing(false); } }); return () => { unsubAuth(); if (unsubProfile) unsubProfile(); if (unsubNotifs) unsubNotifs(); }; }, []);
-      useEffect(() => { const unsubDonors = onSnapshot(query(collection(db, DONORS_COLLECTION), orderBy('createdAt','desc')), snap => { setDonors(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }, () => setLoading(false)); const unsubMed = onSnapshot(query(collection(db, MEDICINES_COLLECTION), orderBy('createdAt','desc')), snap => { setMedicines(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoadingMed(false); }, () => setLoadingMed(false)); const unsubPharm = onSnapshot(query(collection(db, PHARMACIES_COLLECTION), orderBy('createdAt','desc')), snap => setPharmacies(snap.docs.map(d => ({ id: d.id, ...d.data() })))); const unsubDoctors = onSnapshot(collection(db, DOCTORS_COLLECTION), snap => setDoctors(snap.docs.map(d => ({ id: d.id, ...d.data() })))); return () => { unsubDonors(); unsubMed(); unsubPharm(); unsubDoctors(); }; }, []);
+
+      // Auth + Notifications listener
+      useEffect(() => {
+        let unsubProfile, unsubNotifs;
+        const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
+          if (unsubProfile) { unsubProfile(); unsubProfile = null; }
+          if (unsubNotifs) { unsubNotifs(); unsubNotifs = null; }
+          if (currentUser) {
+            setUser(currentUser);
+            unsubProfile = onSnapshot(doc(db, DONORS_COLLECTION, currentUser.uid), (snap) => {
+              setUserProfile(snap.exists() ? { id: snap.id, ...snap.data() } : null);
+              setInitializing(false);
+            }, () => setInitializing(false));
+            unsubNotifs = onSnapshot(query(collection(db, NOTIFICATIONS_COLLECTION), orderBy('createdAt','desc')), (snap) => {
+              setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(n => n.toUserId === currentUser.uid));
+            });
+          } else {
+            setUser(null); setUserProfile(null); setNotifications([]); setInitializing(false);
+          }
+        });
+        return () => { unsubAuth(); if (unsubProfile) unsubProfile(); if (unsubNotifs) unsubNotifs(); };
+      }, []);
+
+      // Firestore listeners
+      useEffect(() => {
+        const unsubDonors = onSnapshot(query(collection(db, DONORS_COLLECTION), orderBy('createdAt','desc')), snap => { setDonors(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }, () => setLoading(false));
+        const unsubMed = onSnapshot(query(collection(db, MEDICINES_COLLECTION), orderBy('createdAt','desc')), snap => { setMedicines(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoadingMed(false); }, () => setLoadingMed(false));
+        const unsubPharm = onSnapshot(query(collection(db, PHARMACIES_COLLECTION), orderBy('createdAt','desc')), snap => setPharmacies(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+        const unsubDoctors = onSnapshot(collection(db, DOCTORS_COLLECTION), snap => setDoctors(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+        return () => { unsubDonors(); unsubMed(); unsubPharm(); unsubDoctors(); };
+      }, []);
+
+      // 🔔 FCM Push Notifications
+      useEffect(() => {
+        if (!user) return;
+        const setupFCM = async () => {
+          try {
+            if (!messaging) return;
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+              const token = await getToken(messaging, {
+                vapidKey: 'BJEXUaBO0D_O2C5X_Q25OzgVDIHMO6kzOVfyAWJvFRZ8Lv95eeoML50NUbvOTDFx7zQZNgAmU5sBH0GeYrIHnEs'
+              });
+              if (token) {
+                console.log('✅ [FCM] Token received');
+                await setDoc(doc(db, 'fcm_tokens', user.uid), {
+                  token, userId: user.uid,
+                  platform: /iphone|ipad|ipod|android/.test(navigator.userAgent.toLowerCase()) ? 'mobile' : 'desktop',
+                  createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+                }, { merge: true });
+                setPushEnabled(true);
+              }
+            }
+            // Foreground messages
+            onMessage(messaging, (payload) => {
+              showNotification('success', payload.notification?.body || '🔔 إشعار جديد');
+            });
+          } catch (e) {
+            console.warn('⚠️ [FCM]', e.message);
+          }
+        };
+        setupFCM();
+      }, [user]);
+
       const showNotification = (type, msg) => { setNotification({ type, msg }); setTimeout(() => setNotification(null), 3500); };
       const handleCopy = (value) => { if (!value) { showNotification('error','لا شيء لنسخه'); return; } navigator.clipboard.writeText(value); showNotification('success','تم النسخ'); };
       const toggleTheme = () => setIsDark(!isDark);
       const markAsRead = async (id) => { try { await updateDoc(doc(db, NOTIFICATIONS_COLLECTION, id), { read: true }); } catch {} };
       const deleteNotification = async (id) => { try { await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, id)); } catch {} };
-      const rejectRequest = async (notif) => { if (!user || !userProfile || !notif) return; try { await addDoc(collection(db, NOTIFICATIONS_COLLECTION), { toUserId: notif.fromUserId, fromUserId: user.uid, title: "اعتذار عن التبرع", body: `نعتذر، ${userProfile.username||'متبرع'} غير متاح حالياً.`, type:'info', read:false, createdAt: serverTimestamp() }); await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, notif.id)); showNotification('success','تم الاعتذار'); } catch { showNotification('error','فشل'); } };
+      const rejectRequest = async (notif) => {
+        if (!user || !userProfile || !notif) return;
+        try {
+          await addDoc(collection(db, NOTIFICATIONS_COLLECTION), { toUserId: notif.fromUserId, fromUserId: user.uid, title: "اعتذار عن التبرع", body: `نعتذر، ${userProfile.username||'متبرع'} غير متاح حالياً.`, type:'info', read:false, createdAt: serverTimestamp() });
+          await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, notif.id));
+          showNotification('success','تم الاعتذار');
+        } catch { showNotification('error','فشل'); }
+      };
+
       if (initializing) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={48}/></div>;
       return (
         <div className="min-h-screen relative">
@@ -793,20 +637,20 @@ function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNo
         </div>
       );
     }
+
     const root = createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
 
   <!-- ========== PWA Service Worker & Install Handler ========== -->
   <script>
-    // Service Worker Registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(r => console.log('[PWA] SW registered:', r.scope)).catch(() => console.warn('[PWA] SW skipped (no sw.js)'));
+        navigator.serviceWorker.register('/firebase-messaging-sw.js').then(r => console.log('[SW] FCM SW registered:', r.scope)).catch(() => console.warn('[SW] No FCM SW'));
+        navigator.serviceWorker.register('/sw.js').then(r => console.log('[SW] App SW registered:', r.scope)).catch(() => {});
       });
     }
 
-    // Install Prompt Handler
     let deferredPrompt;
     const installBanner = document.getElementById('pwa-install-banner');
     const installBtn = document.getElementById('pwa-install-btn');
@@ -818,7 +662,7 @@ function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNo
     function showInstallBanner() {
       if (installBanner && !isAppInstalled()) {
         const dismissed = localStorage.getItem('pwa-install-dismissed');
-        if (dismissed && Date.now() - parseInt(dismissed) < 24 * 60 * 60 * 1000) return;
+        if (dismissed && Date.now() - parseInt(dismissed) < 24*60*60*1000) return;
         installBanner.style.display = 'block';
       }
     }
@@ -837,8 +681,7 @@ function AppHeader({isDark,toggleTheme,setView,notifications,markAsRead,deleteNo
     if (installBtn) {
       installBtn.addEventListener('click', async () => {
         if (!deferredPrompt) {
-          const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-          if (isIOS) alert('لتثبيت التطبيق:\n\n1. اضغط على زر المشاركة 📤 في المتصفح\n2. اختر "إضافة إلى الشاشة الرئيسية"');
+          if (/iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase())) alert('لتثبيت التطبيق:\n\n1️⃣ اضغط على زر المشاركة 📤\n2️⃣ اختر "إضافة إلى الشاشة الرئيسية"');
           dismissInstallBanner();
           return;
         }
