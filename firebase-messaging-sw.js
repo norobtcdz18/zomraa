@@ -23,12 +23,12 @@ messaging.onBackgroundMessage((payload) => {
   const options = {
     body: body,
     icon: '/zomraa/icon-192x192.png',
-badge: '/zomraa/icon-72x72.png',
+    badge: '/zomraa/icon-72x72.png',
     dir: 'rtl',
     tag: payload.data?.tag || 'default',
     vibrate: [200, 100, 200],
     data: {
-      url: payload.data?.url || '/'
+      url: payload.data?.url || '/zomraa/'
     }
   };
 
@@ -39,8 +39,8 @@ badge: '/zomraa/icon-72x72.png',
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-const urlToOpen = event.notification.data?.url || '/zomraa/';
-  
+  const urlToOpen = event.notification.data?.url || '/zomraa/';
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       // If a window is already open, focus it
