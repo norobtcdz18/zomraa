@@ -577,19 +577,39 @@
         return () => { unsubDonors(); unsubMed(); unsubPharm(); unsubDoctors(); };
       }, []);
 
-      // 🔔 FCM Push Notifications
+// 🔔 FCM Push Notifications
       useEffect(() => {
         if (!user) return;
         const setupFCM = async () => {
           try {
             if (!messaging) return;
+
+            // ✅ استقبال الإشعارات أثناء فتح التطبيق - دائماً نشط
+            onMessage(messaging, (payload) => {
+              console.log('📩 [FCM] Foreground message:', payload);
+              const title = payload.notification?.title || 'Zomraa';
+              const body = payload.notification?.body || '🔔 إشعار جديد';
+              showNotification('success', body);
+            });
+
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
+              // ✅ تسجيل Service Worker الخاص بالإشعارات يدوياً
+              let swRegistration;
+              try {
+                swRegistration = await navigator.serviceWorker.register('/zomraa/firebase-messaging-sw.js');
+                await swRegistration.update();
+                console.log('✅ [FCM] Service Worker ready:', swRegistration.scope);
+              } catch (swErr) {
+                console.warn('⚠️ [FCM] SW registration failed:', swErr);
+              }
+
               const token = await getToken(messaging, {
-                vapidKey: 'BJEXUaBO0D_O2C5X_Q25OzgVDIHMO6kzOVfyAWJvFRZ8Lv95eeoML50NUbvOTDFx7zQZNgAmU5sBH0GeYrIHnEs'
+                vapidKey: 'BJEXUaBO0D_O2C5X_Q25OzgVDIHMO6kzOVfyAWJvFRZ8Lv95eeoML50NUbvOTDFx7zQZNgAmU5sBH0GeYrIHnEs',
+                serviceWorkerRegistration: swRegistration
               });
               if (token) {
-                console.log('✅ [FCM] Token received');
+                console.log('✅ [FCM] Token received:', token);
                 await setDoc(doc(db, 'fcm_tokens', user.uid), {
                   token, userId: user.uid,
                   platform: /iphone|ipad|ipod|android/.test(navigator.userAgent.toLowerCase()) ? 'mobile' : 'desktop',
@@ -598,16 +618,13 @@
                 setPushEnabled(true);
               }
             }
-            // Foreground messages
-            onMessage(messaging, (payload) => {
-              showNotification('success', payload.notification?.body || '🔔 إشعار جديد');
-            });
           } catch (e) {
             console.warn('⚠️ [FCM]', e.message);
           }
         };
         setupFCM();
       }, [user]);
+    
 
       const showNotification = (type, msg) => { setNotification({ type, msg }); setTimeout(() => setNotification(null), 3500); };
       const handleCopy = (value) => { if (!value) { showNotification('error','لا شيء لنسخه'); return; } navigator.clipboard.writeText(value); showNotification('success','تم النسخ'); };
