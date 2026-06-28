@@ -578,55 +578,45 @@
       }, []);
 
      // 🔔 FCM Push Notifications
+// 🔔 FCM Push Notifications
 useEffect(() => {
-    if (!user) return;
-    const setupFCM = async () => {
-      try {
-        if (!messaging) return;
-
-        // ✅ ضع onMessage أولاً - خارج شرط الإذن
-        onMessage(messaging, (payload) => {
-          console.log('📩 [FCM] Foreground message:', payload);
-          const title = payload.notification?.title || 'Zomraa';
-          const body = payload.notification?.body || '🔔 إشعار جديد';
-          showNotification('success', body);
+  if (!user) return;
+  const setupFCM = async () => {
+    try {
+      if (!messaging) return;
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        
+        // 1. تسجيل الـ Service Worker صراحةً بالمسار الصحيح لمشروعك
+        const registration = await navigator.serviceWorker.register('/zomraa/firebase-messaging-sw.js');
+        
+        // 2. تمرير التسجيل (registration) إلى دالة getToken
+        const token = await getToken(messaging, {
+          vapidKey: 'BJEXUaBO0D_O2C5X_Q25OzgVDIHMO6kzOVfyAWJvFRZ8Lv95eeoML50NUbvOTDFx7zQZNgAmU5sBH0GeYrIHnEs',
+          serviceWorkerRegistration: registration // <-- الإضافة المهمة هنا
         });
-
-        // طلب الإذن
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          // انتظر تفعيل service worker الإشعارات
-          let swRegistration;
-          try {
-              swRegistration = await navigator.serviceWorker.getRegistration('/zomraa/firebase-messaging-sw.js');
-              if (!swRegistration) {
-                  swRegistration = await navigator.serviceWorker.register('/zomraa/firebase-messaging-sw.js');
-              }
-              await swRegistration.update();
-              console.log('✅ [FCM] Service Worker ready:', swRegistration.scope);
-          } catch (err) {
-              console.warn('⚠️ [FCM] SW registration failed:', err);
-          }
-
-          const token = await getToken(messaging, {
-              vapidKey: 'BJEXUaBO0D_O2C5X_Q25OzgVDIHMO6kzOVfyAWJvFRZ8Lv95eeoML50NUbvOTDFx7zQZNgAmU5sBH0GeYrIHnEs',
-              serviceWorkerRegistration: swRegistration,
-          });
-          if (token) {
-            console.log('✅ [FCM] Token received');
-            await setDoc(doc(db, 'fcm_tokens', user.uid), {
-              token, userId: user.uid,
-              platform: /iphone|ipad|ipod|android/.test(navigator.userAgent.toLowerCase()) ? 'mobile' : 'desktop',
-              createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-            }, { merge: true });
-            setPushEnabled(true);
-          }
+        
+        if (token) {
+          console.log('✅ [FCM] Token received');
+          await setDoc(doc(db, 'fcm_tokens', user.uid), {
+            token, userId: user.uid,
+            platform: /iphone|ipad|ipod|android/.test(navigator.userAgent.toLowerCase()) ? 'mobile' : 'desktop',
+            createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+          }, { merge: true });
+          setPushEnabled(true);
         }
-      } catch (e) {
-        console.warn('⚠️ [FCM]', e.message);
       }
-    };
-    setupFCM();
+      
+      // استقبال الرسائل والتطبيق مفتوح
+      onMessage(messaging, (payload) => {
+        showNotification('success', payload.notification?.body || '🔔 إشعار جديد');
+      });
+    } catch (e) {
+      console.warn('⚠️ [FCM]', e.message);
+    }
+  };
+  setupFCM();
+}, [user]);
   }, [user]);
 
       const showNotification = (type, msg) => { setNotification({ type, msg }); setTimeout(() => setNotification(null), 3500); };
